@@ -32,63 +32,29 @@ from src.config import (
 )
 from src.predict import predict_records, load_threshold_configuration, prepare_inference_features
 from src.explain import get_pipeline_feature_names, explain_sample_human_readable
+from app.theme import apply_theme, get_theme
+from app.components import page_header, chip_html, compact_physics_card, result_verdict_card, icon_html
 
 # ---------------------------------------------------------------------------
 # PAGE CONFIG
 # ---------------------------------------------------------------------------
 st.set_page_config(
     page_title="PredictiveGuard | ALGOTHON26",
-    page_icon="⚙️",
     layout="wide",
     initial_sidebar_state="expanded",
 )
 
 # ---------------------------------------------------------------------------
-# GLOBAL CSS
+# THEME INITIALIZATION
 # ---------------------------------------------------------------------------
-CSS = """
-<style>
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
-html,body,[class*=\"css\"]{ font-family:'Inter',sans-serif; }
-.stApp{ background:linear-gradient(135deg,#0d1117 0%,#111827 50%,#0d1117 100%); color:#e2e8f0; }
-#MainMenu,footer,header{ visibility:hidden; }
-.stDeployButton{ display:none; }
-[data-testid=\"stSidebar\"]{ background:linear-gradient(180deg,#161b27 0%,#1a2235 100%); border-right:1px solid rgba(99,102,241,.3); }
-[data-testid=\"stMetric\"]{ background:rgba(99,102,241,.08); border:1px solid rgba(99,102,241,.25); border-radius:12px; padding:16px; transition:all .3s; }
-[data-testid=\"stMetric\"]:hover{ border-color:rgba(99,102,241,.5); background:rgba(99,102,241,.14); transform:translateY(-2px); }
-[data-testid=\"stMetricLabel\"]{ color:#94a3b8!important; font-size:.78rem!important; }
-[data-testid=\"stMetricValue\"]{ color:#e2e8f0!important; font-size:1.6rem!important; font-weight:700!important; }
-[data-testid=\"stTabs\"] button{ color:#64748b; font-weight:500; border-radius:8px 8px 0 0; }
-[data-testid=\"stTabs\"] button[aria-selected=\"true\"]{ color:#818cf8; border-bottom:2px solid #818cf8; font-weight:600; }
-.stButton>button{ background:linear-gradient(135deg,#4f46e5,#7c3aed); color:#fff; border:none; border-radius:10px; font-weight:600; font-size:.9rem; padding:.55rem 1.6rem; transition:all .25s; box-shadow:0 4px 20px rgba(99,102,241,.35); }
-.stButton>button:hover{ background:linear-gradient(135deg,#4338ca,#6d28d9); transform:translateY(-2px); box-shadow:0 6px 28px rgba(99,102,241,.5); }
-.pg-hero{ background:linear-gradient(135deg,rgba(79,70,229,.15) 0%,rgba(124,58,237,.1) 50%,rgba(16,185,129,.08) 100%); border:1px solid rgba(99,102,241,.3); border-radius:16px; padding:32px 36px 28px; margin-bottom:28px; position:relative; overflow:hidden; }
-.pg-hero h1{ font-size:2.1rem; font-weight:800; margin:0; background:linear-gradient(135deg,#818cf8,#34d399); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
-.pg-hero p{ color:#94a3b8; font-size:.95rem; margin:8px 0 0; }
-.pg-badge{ display:inline-block; background:rgba(16,185,129,.15); border:1px solid rgba(16,185,129,.4); color:#34d399; font-size:.7rem; font-weight:700; padding:3px 10px; border-radius:20px; letter-spacing:.06em; text-transform:uppercase; margin-right:8px; }
-.pg-badge-yellow{ background:rgba(245,158,11,.15); border-color:rgba(245,158,11,.4); color:#fbbf24; }
-.pg-badge-blue{ background:rgba(99,102,241,.15); border-color:rgba(99,102,241,.4); color:#818cf8; }
-.risk-card{ border-radius:14px; padding:22px 24px; margin:8px 0; border:2px solid; text-align:center; }
-.risk-nominal{ background:rgba(16,185,129,.08); border-color:rgba(16,185,129,.5); }
-.risk-warning{ background:rgba(245,158,11,.08); border-color:rgba(245,158,11,.5); }
-.risk-critical{ background:rgba(239,68,68,.08); border-color:rgba(239,68,68,.5); animation:pulse-border 2s infinite; }
-@keyframes pulse-border{ 0%,100%{ border-color:rgba(239,68,68,.5); } 50%{ border-color:rgba(239,68,68,.9); } }
-.risk-label{ font-size:.75rem; font-weight:700; letter-spacing:.1em; text-transform:uppercase; }
-.risk-prob{ font-size:3.2rem; font-weight:800; line-height:1.1; margin:6px 0; }
-.risk-sub{ font-size:.8rem; color:#94a3b8; }
-.risk-nominal .risk-label{ color:#34d399; } .risk-warning .risk-label{ color:#fbbf24; } .risk-critical .risk-label{ color:#f87171; }
-.risk-nominal .risk-prob{ color:#34d399; } .risk-warning .risk-prob{ color:#fbbf24; } .risk-critical .risk-prob{ color:#f87171; }
-.section-header{ display:flex; align-items:center; gap:10px; border-bottom:1px solid rgba(99,102,241,.2); padding-bottom:10px; margin:24px 0 18px; }
-.section-header h3{ font-size:1.05rem; font-weight:700; color:#818cf8; margin:0; }
-.feat-chip{ display:inline-flex; align-items:center; gap:6px; background:rgba(30,41,59,.8); border:1px solid rgba(99,102,241,.2); border-radius:8px; padding:4px 10px; font-size:.78rem; font-family:'JetBrains Mono',monospace; color:#94a3b8; margin:3px; }
-::-webkit-scrollbar{ width:4px; height:4px; }
-::-webkit-scrollbar-track{ background:rgba(30,41,59,.3); }
-::-webkit-scrollbar-thumb{ background:rgba(99,102,241,.5); border-radius:4px; }
-</style>
-"""
-st.markdown(CSS, unsafe_allow_html=True)
+if "theme_mode" not in st.session_state:
+    st.session_state["theme_mode"] = "light"
 
-BG, PANEL, TEXT = "#0d1117", "#161b27", "#e2e8f0"
+ACTIVE_THEME = apply_theme(st.session_state["theme_mode"])
+BG = ACTIVE_THEME["bg"]
+PANEL = ACTIVE_THEME["surface"]
+TEXT = ACTIVE_THEME["text"]
+
 
 
 # ---------------------------------------------------------------------------
@@ -144,16 +110,22 @@ def build_explainer(_pipeline):
 def risk_card_html(prob: float, threshold: float) -> str:
     pct = prob * 100
     if prob >= threshold:
-        cls, label, icon = "risk-critical", "⚠ FAILURE PREDICTED", "🔴"
+        cls = "risk-critical"
+        label = "FAILURE PREDICTED"
+        icon = icon_html("error_outline", "icon-danger")
     elif prob >= 0.25:
-        cls, label, icon = "risk-warning", "⚡ ELEVATED RISK", "🟡"
+        cls = "risk-warning"
+        label = "ELEVATED RISK"
+        icon = icon_html("warning_amber", "icon-warning")
     else:
-        cls, label, icon = "risk-nominal", "✓ NOMINAL OPERATION", "🟢"
+        cls = "risk-nominal"
+        label = "NOMINAL OPERATION"
+        icon = icon_html("check_circle", "icon-success")
     return (
-        f'<div class="risk-card {cls}">' +
-        f'<div class="risk-label">{label}</div>' +
-        f'<div class="risk-prob">{pct:.1f}%</div>' +
-        f'<div class="risk-sub">Failure Probability &middot; Threshold {threshold:.2%} &middot; {icon}</div>' +
+        f'<div class="risk-card {cls}">'
+        f'<div class="risk-label" style="display: flex; align-items: center; justify-content: center; gap: 6px;">{icon} <span>{label}</span></div>'
+        f'<div class="risk-prob">{pct:.1f}%</div>'
+        f'<div class="risk-sub">Failure Probability &middot; Operating Threshold {threshold:.2%}</div>'
         '</div>'
     )
 
@@ -173,40 +145,42 @@ def compute_physics(air_temp, proc_temp, speed, torque, wear, machine_type):
 
 
 def shap_waterfall_fig(shap_vals, feature_names, proc_arr, base_val, prob, top_n=8):
-    RED, GREEN = "#f87171", "#34d399"
+    t = get_theme(st.session_state.get("theme_mode", "light"))
+    RED, GREEN = t["danger"], t["success"]
     contribs = sorted(
         [{"name": n, "val": float(v), "shap": float(s)}
          for n, v, s in zip(feature_names, proc_arr, shap_vals)],
         key=lambda x: abs(x["shap"]), reverse=True
     )
     top = contribs[:top_n][::-1]
-    fig, ax = plt.subplots(figsize=(9, 5))
-    fig.patch.set_facecolor(BG); ax.set_facecolor(PANEL)
+    fig, ax = plt.subplots(figsize=(9, 4.8))
+    fig.patch.set_facecolor(t["surface"])
+    ax.set_facecolor(t["surface_subtle"])
     names      = [c["name"]  for c in top]
     shaps_plot = [c["shap"]  for c in top]
     colors     = [RED if s > 0 else GREEN for s in shaps_plot]
-    bars = ax.barh(names, shaps_plot, color=colors, edgecolor="none", height=0.55, alpha=0.88)
+    bars = ax.barh(names, shaps_plot, color=colors, edgecolor="none", height=0.55, alpha=0.92)
     for bar, val in zip(bars, shaps_plot):
         off = 0.03 if val >= 0 else -0.03
         ha  = "left" if val >= 0 else "right"
         ax.text(val + off, bar.get_y() + bar.get_height() / 2,
                 f"{val:+.3f}", ha=ha, va="center",
-                fontsize=8.5, fontweight="600", color=TEXT, fontfamily="monospace")
-    ax.axvline(0, color="#475569", linewidth=1.2)
-    ax.tick_params(colors=TEXT, labelsize=8.5)
+                fontsize=8.5, fontweight="600", color=t["text"], fontfamily="monospace")
+    ax.axvline(0, color=t["border_strong"], linewidth=1.2)
+    ax.tick_params(colors=t["text"], labelsize=8.5)
     for sp in ["top", "right"]: ax.spines[sp].set_visible(False)
-    for sp in ["bottom", "left"]: ax.spines[sp].set_color("#1e293b")
-    ax.xaxis.grid(True, color="#1e293b", linewidth=0.5, alpha=0.7)
+    for sp in ["bottom", "left"]: ax.spines[sp].set_color(t["border"])
+    ax.xaxis.grid(True, color=t["grid"], linewidth=0.6, alpha=0.8)
     ax.set_axisbelow(True)
-    ax.set_xlabel("SHAP Contribution to Log-Odds of Failure", color=TEXT, fontsize=9)
+    ax.set_xlabel("SHAP Contribution to Log-Odds of Failure", color=t["text"], fontsize=9)
     ax.set_title(
-        f"Local SHAP Attribution  \u00b7  Failure Prob: {prob*100:.1f}%  \u00b7  Base: {base_val:+.3f}",
-        color=TEXT, fontsize=10, fontweight="600", pad=10,
+        f"Local SHAP Attribution  ·  Failure Prob: {prob*100:.1f}%  ·  Base: {base_val:+.3f}",
+        color=t["text"], fontsize=10, fontweight="600", pad=10,
     )
     ax.legend(
-        handles=[mpatches.Patch(color=RED, label="\u2191 Increases failure risk", alpha=0.85),
-                 mpatches.Patch(color=GREEN, label="\u2193 Reduces failure risk", alpha=0.85)],
-        loc="lower right", fontsize=8, facecolor=PANEL, edgecolor="#475569", labelcolor=TEXT,
+        handles=[mpatches.Patch(color=RED, label="Increases failure risk", alpha=0.9),
+                 mpatches.Patch(color=GREEN, label="Reduces failure risk", alpha=0.9)],
+        loc="lower right", fontsize=8, facecolor=t["surface"], edgecolor=t["border"], labelcolor=t["text"],
     )
     fig.tight_layout(pad=1.5)
     return fig
@@ -218,22 +192,29 @@ def shap_waterfall_fig(shap_vals, feature_names, proc_arr, base_val, prob, top_n
 def render_sidebar(thresh_cfg):
     with st.sidebar:
         st.markdown(
-            '<div style="text-align:center;padding:12px 0 20px;">'
-            '<div style="font-size:2.4rem;">⚙️</div>'
-            '<div style="font-size:1.05rem;font-weight:800;color:#818cf8;">PredictiveGuard</div>'
-            '<div style="font-size:.72rem;color:#64748b;margin-top:4px;">ALGOTHON26 · ALG-DATA-02</div>'
+            '<div style="padding: 4px 0 14px;">'
+            '<div style="font-size: 1.15rem; font-weight: 700; color: var(--pg-text); letter-spacing: -0.02em;">PredictiveGuard</div>'
+            '<div style="font-size: 0.75rem; color: var(--pg-muted); margin-top: 2px;">ALGOTHON26 · Track ALG-DATA-02</div>'
             '</div>',
             unsafe_allow_html=True,
         )
-        st.markdown("---")
-        st.markdown("**🏛 Operating Mode**")
+
+        # Light / Dark theme toggle at top of sidebar
+        dark_active = st.toggle("Dark Theme", value=(st.session_state.get("theme_mode") == "dark"), key="theme_toggle")
+        new_theme = "dark" if dark_active else "light"
+        if new_theme != st.session_state.get("theme_mode"):
+            st.session_state["theme_mode"] = new_theme
+            st.rerun()
+
+        st.markdown('<hr style="border:none;border-top:1px solid var(--pg-sidebar-border);margin:14px 0;">', unsafe_allow_html=True)
+        st.markdown("**Operating Mode**")
         threshold_mode = st.radio(
             "threshold_mode",
             ["optimal_f1", "high_recall", "custom"],
             format_func=lambda x: {
-                "optimal_f1":  "⚖ Max-F1 (Balanced)",
-                "high_recall": "🛡 High-Recall (Safety-First)",
-                "custom":      "🔧 Custom Override",
+                "optimal_f1":  "Max-F1 (Balanced)",
+                "high_recall": "High-Recall (Safety-First)",
+                "custom":      "Custom Override",
             }[x],
             label_visibility="collapsed",
         )
@@ -248,23 +229,23 @@ def render_sidebar(thresh_cfg):
             else float(thresh_cfg.get("optimal_f1_threshold", 0.84)) if threshold_mode == "optimal_f1"
             else float(thresh_cfg.get("high_recall_threshold", 0.50))
         )
-        st.markdown("---")
-        st.markdown("**📊 Navigation**")
+        st.markdown('<hr style="border:none;border-top:1px solid var(--pg-sidebar-border);margin:14px 0;">', unsafe_allow_html=True)
+        st.markdown("**Navigation**")
         page = st.radio(
             "nav_page",
-            ["🔬 Live Inference", "📁 Batch Prediction",
-             "📈 Model Performance", "🔍 Explainability",
-             "📋 Dataset Explorer", "🗂 System Info"],
+            ["Live Inference", "Batch Prediction",
+             "Model Performance", "Explainability",
+             "Dataset Explorer", "System Info"],
             label_visibility="collapsed",
         )
-        st.markdown("---")
+        st.markdown('<hr style="border:none;border-top:1px solid var(--pg-sidebar-border);margin:14px 0;">', unsafe_allow_html=True)
         st.markdown(
-            '<div style="font-size:.72rem;color:#475569;padding:0 4px;">'
-            '<b style="color:#64748b;">Model:</b> LightGBM + Isotonic Calibration<br>'
-            '<b style="color:#64748b;">Dataset:</b> AI4I 2020 Predictive Maintenance<br>'
-            '<b style="color:#64748b;">Features:</b> 5 sensor + 11 physics-derived<br>'
-            '<b style="color:#64748b;">Pipeline:</b> Anti-leakage · Reproducible<br>'
-            '<b style="color:#64748b;">Tests:</b> 34/34 passing ✓'
+            '<div style="font-size: 0.74rem; color: var(--pg-muted); padding: 4px 0; line-height: 1.6;">'
+            '<div><strong style="color: var(--pg-text);">Model:</strong> LightGBM + Isotonic</div>'
+            '<div><strong style="color: var(--pg-text);">Dataset:</strong> AI4I 2020 Telemetry</div>'
+            '<div><strong style="color: var(--pg-text);">Features:</strong> 5 sensor + 11 physics</div>'
+            '<div><strong style="color: var(--pg-text);">Anti-Leakage:</strong> Enforced at ingestion</div>'
+            '<div><strong style="color: var(--pg-text);">Verification:</strong> 34/34 tests passing</div>'
             '</div>',
             unsafe_allow_html=True,
         )
@@ -275,19 +256,15 @@ def render_sidebar(thresh_cfg):
 # PAGE 1 -- LIVE INFERENCE
 # ---------------------------------------------------------------------------
 def page_live_inference(pipeline, explainer, thresh_cfg, threshold_mode, active_thresh):
-    st.markdown(
-        '<div class="pg-hero">'
-        '<span class="pg-badge">Live Inference</span>'
-        '<span class="pg-badge pg-badge-blue">TreeSHAP</span>'
-        '<span class="pg-badge pg-badge-yellow">Physics-Informed</span>'
-        '<h1>🔬 Real-Time Failure Prediction</h1>'
-        '<p>Enter live sensor telemetry for an instant calibrated failure probability with SHAP explainability.</p>'
-        '</div>',
-        unsafe_allow_html=True,
+    page_header(
+        title="Real-Time Failure Prediction",
+        description="Enter live sensor telemetry for an instant calibrated failure probability with SHAP explainability.",
+        badges=["Live Inference", "TreeSHAP", "Physics-Informed"],
+        icon="precision_manufacturing"
     )
     col_form, col_result = st.columns([1, 1], gap="large")
     with col_form:
-        st.markdown('<div class="section-header"><h3>📡 Sensor Telemetry Input</h3></div>',
+        st.markdown('<div class="section-header"><span class="material-symbols-outlined icon-inline">tune</span><span class="section-title">Sensor Telemetry Input</span></div>',
                     unsafe_allow_html=True)
         machine_type = st.selectbox("Machine Type", ["L", "M", "H"],
                                     help="L=Low / M=Medium / H=High quality grade")
@@ -296,23 +273,23 @@ def page_live_inference(pipeline, explainer, thresh_cfg, threshold_mode, active_
         speed     = st.number_input("Rotational Speed [rpm]",  1000,  3000,  1551,  1)
         torque    = st.number_input("Torque [Nm]",              0.0,   80.0,  42.8,  0.1, "%.1f")
         wear      = st.number_input("Tool Wear [min]",           0,    300,    0,     1)
-        predict_btn = st.button("⚡ Run Prediction", use_container_width=True, type="primary")
+        predict_btn = st.button("Run Prediction", use_container_width=True, type="primary", icon=":material/bolt:")
         phys = compute_physics(air_temp, proc_temp, speed, torque, wear, machine_type)
-        with st.expander("🔩 Derived Physics Features Preview"):
+        with st.expander("Derived Physics Features Preview", icon=":material/science:"):
             p1, p2 = st.columns(2)
             p1.metric("Temp Diff [K]", f"{phys['temp_diff']:.2f}",
-                      delta="⚠ HDF Risk" if phys["hdf_risk"] else "✓ OK",
+                      delta="HDF Risk" if phys["hdf_risk"] else "Normal",
                       delta_color="inverse" if phys["hdf_risk"] else "normal")
             p2.metric("Mechanical Power [W]", f"{phys['power_w']:,.0f}",
-                      delta="⚠ PWF Risk" if phys["pwf_risk"] else "✓ Safe Band",
+                      delta="PWF Risk" if phys["pwf_risk"] else "Safe Band",
                       delta_color="inverse" if phys["pwf_risk"] else "normal")
             p3, p4 = st.columns(2)
             p3.metric("Wear x Torque [min·Nm]", f"{phys['wear_torque']:,.0f}")
             p4.metric("Overstrain Ratio", f"{phys['overstrain_ratio']:.4f}",
-                      delta="⚠ >1.0" if phys["overstrain_ratio"] > 1.0 else "✓ Safe",
+                      delta="Over Limit (>1.0)" if phys["overstrain_ratio"] > 1.0 else "Safe",
                       delta_color="inverse" if phys["overstrain_ratio"] > 1.0 else "normal")
             st.markdown(
-                f"**TWF Band:** {'🟡 IN critical wear zone [200-240 min]' if phys['in_twf_band'] else '🟢 Outside TWF zone'}"
+                f"**TWF Status:** {chip_html('Critical wear zone [200-240 min]', 'warning') if phys['in_twf_band'] else chip_html('Outside TWF zone', 'success')}"
             )
     with col_result:
         if predict_btn:
@@ -331,7 +308,7 @@ def page_live_inference(pipeline, explainer, thresh_cfg, threshold_mode, active_
                     custom_threshold=active_thresh if threshold_mode == "custom" else None,
                 )
                 prob = float(result["failure_probability"].iloc[0])
-            st.markdown('<div class="section-header"><h3>🎯 Prediction Result</h3></div>',
+            st.markdown('<div class="section-header"><span class="material-symbols-outlined icon-inline">analytics</span><span class="section-title">Prediction Result</span></div>',
                         unsafe_allow_html=True)
             st.markdown(risk_card_html(prob, active_thresh), unsafe_allow_html=True)
             mode_labels = {
@@ -339,8 +316,8 @@ def page_live_inference(pipeline, explainer, thresh_cfg, threshold_mode, active_
                 "high_recall": f"High-Recall · OOF threshold {thresh_cfg.get('high_recall_threshold', 0.50):.4f}",
                 "custom":       f"Custom override · {active_thresh:.4f}",
             }
-            st.caption(f"🏛 Operating mode: **{mode_labels[threshold_mode]}**")
-            st.markdown('<div class="section-header"><h3>🔍 SHAP Local Explanation</h3></div>',
+            st.caption(f"Operating mode: **{mode_labels[threshold_mode]}**")
+            st.markdown('<div class="section-header"><span class="material-symbols-outlined icon-inline">troubleshoot</span><span class="section-title">SHAP Local Explanation</span></div>',
                         unsafe_allow_html=True)
             with st.spinner("Computing TreeSHAP (log-odds space)..."):
                 prep = pipeline.named_steps["preprocessing"]
@@ -361,39 +338,41 @@ def page_live_inference(pipeline, explainer, thresh_cfg, threshold_mode, active_
             action       = human.get("recommended_maintenance_action", "")
             action_clean = action.split("(Decision Support): ")[-1] if "(Decision Support):" in action else action
             action_type  = action.split(":")[0].split("(")[0].strip()
-            icon_map = {"CRITICAL": "🔴", "WARNING": "🟡",
-                        "ADVISORY": "🟠", "NOMINAL": "🟢"}
-            icon = icon_map.get(action_type, "ℹ️")
+            icon_map = {
+                "CRITICAL": icon_html("error_outline", "icon-danger"),
+                "WARNING": icon_html("warning_amber", "icon-warning"),
+                "ADVISORY": icon_html("info", "icon-accent"),
+                "NOMINAL": icon_html("check_circle", "icon-success"),
+            }
+            icon = icon_map.get(action_type, icon_html("info", "icon-muted"))
             st.markdown(
-                f'<div style="background:rgba(30,41,59,.6);border:1px solid rgba(99,102,241,.2);'
-                f'border-radius:12px;padding:16px 18px;margin-top:6px;">'
-                f'<div style="font-size:.72rem;font-weight:700;color:#94a3b8;'
-                f'letter-spacing:.08em;text-transform:uppercase;margin-bottom:6px;">'
-                f'🛠 Decision Support Recommendation</div>'
-                f'<div style="font-size:.88rem;color:#e2e8f0;line-height:1.6;">'
-                f'{icon} <b>{action_type}:</b> {action_clean}</div>'
-                f'<div style="font-size:.7rem;color:#475569;margin-top:8px;font-style:italic;">'
+                f'<div class="pg-card" style="margin-top: 10px;">'
+                f'<div style="font-size:.75rem;font-weight:700;color:var(--pg-muted);letter-spacing:.06em;text-transform:uppercase;margin-bottom:8px;display:flex;align-items:center;gap:6px;">'
+                f'<span class="material-symbols-outlined icon-inline">build</span> <span>Decision Support Recommendation</span></div>'
+                f'<div style="font-size:.88rem;color:var(--pg-text);line-height:1.6;display:flex;align-items:flex-start;gap:8px;">'
+                f'<span>{icon}</span> <span><strong style="color:var(--pg-text);">{action_type}:</strong> {action_clean}</span></div>'
+                f'<div style="font-size:.72rem;color:var(--pg-muted);margin-top:8px;font-style:italic;">'
                 f'Decision support only. Operators retain full authority.</div>'
                 f'</div>',
                 unsafe_allow_html=True,
             )
-            with st.expander("📋 Full Feature Contribution Table"):
+            with st.expander("Full Feature Contribution Table", icon=":material/table_rows:"):
                 all_c = human.get("top_risk_drivers", []) + human.get("top_mitigating_factors", [])
                 if all_c:
                     rows = [{"Feature": d["feature"], "Value": f"{d['value']:.4f}",
                               "SHAP (Log-Odds)": f"{d['shap_value']:+.4f}",
-                              "Direction": "↑ Risk" if d["shap_value"] > 0 else "↓ Mitigating"}
+                              "Direction": "+ Risk" if d["shap_value"] > 0 else "- Mitigating"}
                             for d in sorted(all_c, key=lambda x: abs(x["shap_value"]), reverse=True)]
                     st.dataframe(pd.DataFrame(rows), use_container_width=True, hide_index=True)
         else:
             st.markdown(
-                '<div style="background:rgba(30,41,59,.4);border:1px dashed rgba(99,102,241,.25);'
-                'border-radius:14px;padding:64px 24px;text-align:center;color:#64748b;margin-top:48px;">'
-                '<div style="font-size:2.5rem;margin-bottom:12px;">⚙️</div>'
-                '<div style="font-size:.92rem;font-weight:500;color:#94a3b8;">'
+                '<div style="background-color:var(--pg-surface);border:1px dashed var(--pg-border-strong);'
+                'border-radius:8px;padding:64px 24px;text-align:center;color:var(--pg-muted);margin-top:24px;">'
+                '<div style="margin-bottom:12px;"><span class="material-symbols-outlined icon-lg icon-muted">precision_manufacturing</span></div>'
+                '<div style="font-size:.92rem;font-weight:600;color:var(--pg-text);">'
                 'Configure sensor telemetry on the left and click <b>Run Prediction</b>.</div>'
-                '<div style="font-size:.78rem;margin-top:12px;color:#475569;line-height:1.7;">'
-                'Physics feature engineering → LightGBM → Isotonic calibration → TreeSHAP attribution.'
+                '<div style="font-size:.80rem;margin-top:8px;color:var(--pg-muted);line-height:1.6;">'
+                'Physics feature engineering &rarr; LightGBM &rarr; Isotonic calibration &rarr; TreeSHAP attribution.'
                 '</div></div>',
                 unsafe_allow_html=True,
             )
@@ -403,39 +382,36 @@ def page_live_inference(pipeline, explainer, thresh_cfg, threshold_mode, active_
 # PAGE 2 -- BATCH PREDICTION
 # ---------------------------------------------------------------------------
 def page_batch_prediction(thresh_cfg, threshold_mode, active_thresh):
-    st.markdown(
-        '<div class="pg-hero">'
-        '<span class="pg-badge">Batch Mode</span>'
-        '<span class="pg-badge pg-badge-blue">CSV Import</span>'
-        '<h1>📁 Batch CSV Prediction</h1>'
-        '<p>Upload a CSV of machine records. Column names auto-normalized; leakage columns dropped.</p>'
-        '</div>',
-        unsafe_allow_html=True,
+    page_header(
+        title="Batch CSV Prediction",
+        description="Upload a CSV of machine records. Column names auto-normalized; leakage columns dropped.",
+        badges=["Batch Mode", "CSV Import"],
+        icon="upload_file"
     )
     col_up, col_info = st.columns([1, 1], gap="large")
     with col_info:
-        st.markdown('<div class="section-header"><h3>📌 Expected Schema</h3></div>',
+        st.markdown('<div class="section-header"><span class="material-symbols-outlined icon-inline">rule</span><span class="section-title">Expected Schema</span></div>',
                     unsafe_allow_html=True)
         schema_df = pd.DataFrame({
             "Column":   ["Type", "Air temperature [K]", "Process temperature [K]",
                          "Rotational speed [rpm]", "Torque [Nm]", "Tool wear [min]"],
             "Dtype":    ["string", "float", "float", "int", "float", "int"],
-            "Required": ["✓"] * 6,
+            "Required": ["Yes"] * 6,
             "Example":  ["L / M / H", "298.1", "308.6", "1551", "42.8", "0"],
         })
         st.dataframe(schema_df, use_container_width=True, hide_index=True)
         st.caption("Column names auto-normalized. Failure flags (HDF/PWF/OSF/TWF/RNF) dropped automatically.")
     with col_up:
-        st.markdown('<div class="section-header"><h3>📤 Upload File</h3></div>',
+        st.markdown('<div class="section-header"><span class="material-symbols-outlined icon-inline">cloud_upload</span><span class="section-title">Upload File</span></div>',
                     unsafe_allow_html=True)
         uploaded = st.file_uploader("Drop CSV here", type=["csv"], label_visibility="collapsed")
         if uploaded is not None:
             try:
                 df_raw = pd.read_csv(uploaded)
-                st.success(f"✓ Loaded **{len(df_raw):,}** records · {len(df_raw.columns)} columns")
+                st.success(f"Loaded {len(df_raw):,} records · {len(df_raw.columns)} columns", icon=":material/check_circle:")
                 with st.expander("Preview raw data (first 5 rows)"):
                     st.dataframe(df_raw.head(), use_container_width=True)
-                if st.button("🚀 Run Batch Inference", type="primary", use_container_width=True):
+                if st.button("Run Batch Inference", type="primary", use_container_width=True, icon=":material/play_arrow:"):
                     with st.spinner(f"Running inference on {len(df_raw):,} records..."):
                         t0 = time.time()
                         results = predict_records(
@@ -473,20 +449,20 @@ def page_batch_prediction(thresh_cfg, threshold_mode, active_thresh):
                         use_container_width=True,
                     )
                     st.download_button(
-                        "⬇ Download Full Predictions CSV",
+                        "Download Full Predictions CSV", icon=":material/download:",
                         data=results.to_csv(index=False).encode("utf-8"),
                         file_name="predictiveguard_predictions.csv",
                         mime="text/csv",
                         use_container_width=True,
                     )
             except Exception as e:
-                st.error(f"❌ Failed to process file: {e}")
+                st.error(f"Failed to process file: {e}", icon=":material/error:")
         else:
             st.markdown(
-                '<div style="background:rgba(30,41,59,.4);border:1px dashed rgba(99,102,241,.3);'
-                'border-radius:14px;padding:48px;text-align:center;color:#64748b;">'
-                '<div style="font-size:2rem;margin-bottom:8px;">📂</div>'
-                '<div style="font-size:.88rem;color:#94a3b8;">Upload a CSV to begin batch inference.</div>'
+                '<div style="background-color:var(--pg-surface);border:1px dashed var(--pg-border-strong);'
+                'border-radius:8px;padding:48px;text-align:center;color:var(--pg-muted);">'
+                '<div style="margin-bottom:8px;"><span class="material-symbols-outlined icon-lg icon-muted">folder_open</span></div>'
+                '<div style="font-size:.88rem;color:var(--pg-text);">Upload a CSV file to begin batch inference.</div>'
                 '</div>',
                 unsafe_allow_html=True,
             )
@@ -496,14 +472,11 @@ def page_batch_prediction(thresh_cfg, threshold_mode, active_thresh):
 # PAGE 3 -- MODEL PERFORMANCE
 # ---------------------------------------------------------------------------
 def page_model_performance(holdout_metrics):
-    st.markdown(
-        '<div class="pg-hero">'
-        '<span class="pg-badge">Holdout Validated</span>'
-        '<span class="pg-badge pg-badge-yellow">2,000 Samples</span>'
-        '<h1>📈 Model Performance Dashboard</h1>'
-        '<p>Generalization metrics on the 20% held-out test set. Model was frozen before any holdout evaluation.</p>'
-        '</div>',
-        unsafe_allow_html=True,
+    page_header(
+        title="Model Performance Dashboard",
+        description="Generalization metrics on the 20% held-out test set. Model was frozen before any holdout evaluation.",
+        badges=["Holdout Validated", "2,000 Samples"],
+        icon="monitoring"
     )
     if not holdout_metrics:
         st.warning("Holdout metrics not found. Run `python -m src.evaluate` to generate.")
@@ -512,7 +485,7 @@ def page_model_performance(holdout_metrics):
     thresh_evals = holdout_metrics.get("threshold_evaluations", {})
     subgroups    = holdout_metrics.get("subgroup_breakdowns", {})
     cost         = holdout_metrics.get("cost_analysis", {})
-    st.markdown('<div class="section-header"><h3>🏅 Headline Metrics (Holdout)</h3></div>',
+    st.markdown('<div class="section-header"><span class="material-symbols-outlined icon-inline">speed</span><span class="section-title">Headline Metrics (Holdout)</span></div>',
                 unsafe_allow_html=True)
     hc = st.columns(5)
     hc[0].metric("PR-AUC",             f"{headline.get('pr_auc', 0):.4f}")
@@ -520,7 +493,7 @@ def page_model_performance(holdout_metrics):
     hc[2].metric("Brier Score",        f"{headline.get('brier_score', 0):.5f}")
     hc[3].metric("Holdout Samples",    f"{holdout_metrics.get('sample_count', 0):,}")
     hc[4].metric("Failure Prevalence", f"{holdout_metrics.get('failure_prevalence_pct', 0):.1f}%")
-    st.markdown('<div class="section-header"><h3>⚖ Threshold Operating Points</h3></div>',
+    st.markdown('<div class="section-header"><span class="material-symbols-outlined icon-inline">tune</span><span class="section-title">Threshold Operating Points</span></div>',
                 unsafe_allow_html=True)
     thresh_rows = []
     for k, v in thresh_evals.items():
@@ -539,7 +512,7 @@ def page_model_performance(holdout_metrics):
     st.dataframe(pd.DataFrame(thresh_rows), use_container_width=True, hide_index=True)
     col_fm, col_pt = st.columns(2, gap="large")
     with col_fm:
-        st.markdown('<div class="section-header"><h3>🔧 Failure Mode Recall</h3></div>',
+        st.markdown('<div class="section-header"><span class="material-symbols-outlined icon-inline">build</span><span class="section-title">Failure Mode Recall</span></div>',
                     unsafe_allow_html=True)
         fm = subgroups.get("failure_mode_breakdown", {})
         if fm:
@@ -569,7 +542,7 @@ def page_model_performance(holdout_metrics):
                         for m in modes]
                 st.dataframe(pd.DataFrame(rows), use_container_width=True, hide_index=True)
     with col_pt:
-        st.markdown('<div class="section-header"><h3>🏭 Product Type Subgroup</h3></div>',
+        st.markdown('<div class="section-header"><span class="material-symbols-outlined icon-inline">factory</span><span class="section-title">Product Type Subgroup</span></div>',
                     unsafe_allow_html=True)
         pt = subgroups.get("product_type_breakdown", {})
         if pt:
@@ -596,16 +569,16 @@ def page_model_performance(holdout_metrics):
                          "F1": f"{pt[t].get('f1', 0):.4f}",
                          "Recall": f"{pt[t].get('recall', 0)*100:.1f}%"} for t in types]
             st.dataframe(pd.DataFrame(rows_pt), use_container_width=True, hide_index=True)
-    st.markdown('<div class="section-header"><h3>💰 Cost-Benefit Analysis (Illustrative)</h3></div>',
+    st.markdown('<div class="section-header"><span class="material-symbols-outlined icon-inline">payments</span><span class="section-title">Cost-Benefit Analysis (Illustrative)</span></div>',
                 unsafe_allow_html=True)
-    st.caption("⚠️ Cost parameters are **assumed / illustrative** and not experimentally validated: "
+    st.caption("Cost parameters are **assumed / illustrative** and not experimentally validated: "
                "$10,000/missed failure (FN), $500/false alarm (FP), $1,500/true intervention (TP).")
     cc = st.columns(4)
     cc[0].metric("Reactive OpEx (Illustrative)",    f"${cost.get('reactive_cost_usd', 0):,.0f}")
     cc[1].metric("ML-Assisted OpEx (Illustrative)", f"${cost.get('minimum_cost_usd', 0):,.0f}")
     cc[2].metric("Net Savings (Illustrative)",       f"${cost.get('net_savings_usd', 0):,.0f}")
     cc[3].metric("Savings % (Illustrative)",         f"{cost.get('percentage_savings', 0):.1f}%")
-    st.markdown('<div class="section-header"><h3>📊 Diagnostic Charts</h3></div>',
+    st.markdown('<div class="section-header"><span class="material-symbols-outlined icon-inline">query_stats</span><span class="section-title">Diagnostic Charts</span></div>',
                 unsafe_allow_html=True)
     ftabs = st.tabs(["PR/ROC Curves", "Confusion Matrices", "Calibration Curve", "Cost Curve"])
     for tab, fname in zip(ftabs, [
@@ -622,17 +595,13 @@ def page_model_performance(holdout_metrics):
 # PAGE 4 -- EXPLAINABILITY
 # ---------------------------------------------------------------------------
 def page_explainability(feat_importance_df, interp_summary):
-    st.markdown(
-        '<div class="pg-hero">'
-        '<span class="pg-badge">TreeSHAP</span>'
-        '<span class="pg-badge pg-badge-blue">Log-Odds Space</span>'
-        '<span class="pg-badge pg-badge-yellow">Physics-Grounded</span>'
-        '<h1>🔍 Model Interpretability</h1>'
-        '<p>Global feature attribution and local case studies via TreeSHAP. Values are in raw log-odds space.</p>'
-        '</div>',
-        unsafe_allow_html=True,
+    page_header(
+        title="Model Interpretability",
+        description="Global feature attribution and local case studies via TreeSHAP. Values are in raw log-odds space.",
+        badges=["TreeSHAP", "Log-Odds Space", "Physics-Grounded"],
+        icon="troubleshoot"
     )
-    st.info("ℹ️ SHAP values are raw margin/log-odds contributions from the LightGBM booster. "
+    st.info("SHAP values are raw margin/log-odds contributions from the LightGBM booster. "
             "Base log-odds ≈ −4.60 (≈3.3% nominal failure rate). "
             "Positive SHAP → increases failure log-odds.")
     tab1, tab2, tab3, tab4 = st.tabs(
@@ -658,32 +627,36 @@ def page_explainability(feat_importance_df, interp_summary):
                      caption="Fig. 18: Local SHAP Waterfall -- 4 Industrial Case Studies",
                      use_container_width=True)
         if interp_summary and "case_studies" in interp_summary:
-            st.markdown('<div class="section-header"><h3>📋 Case Study Reports</h3></div>',
+            st.markdown('<div class="section-header"><span class="material-symbols-outlined icon-inline">assignment</span><span class="section-title">Case Study Reports</span></div>',
                         unsafe_allow_html=True)
-            icon_map = {"CRITICAL": "🔴", "WARNING": "🟡",
-                        "ADVISORY": "🟠", "NOMINAL": "🟢"}
+            icon_map = {
+                "CRITICAL": icon_html("error_outline", "icon-danger"),
+                "WARNING": icon_html("warning_amber", "icon-warning"),
+                "ADVISORY": icon_html("info", "icon-accent"),
+                "NOMINAL": icon_html("check_circle", "icon-success"),
+            }
             for key, cs in interp_summary["case_studies"].items():
                 exp   = cs.get("explanation", {})
                 prob  = exp.get("failure_probability", 0)
                 action = exp.get("recommended_maintenance_action", "N/A")
                 action_clean = action.split("(Decision Support): ")[-1] if "(Decision Support):" in action else action
                 action_type  = action.split(":")[0].split("(")[0].strip()
-                icon = icon_map.get(action_type, "ℹ️")
-                with st.expander(f"{icon} {cs.get('title', key)} -- {prob*100:.1f}%"):
+                icon = icon_map.get(action_type, icon_html("info", "icon-muted"))
+                with st.expander(f"{cs.get('title', key)} · Breakdown Probability {prob*100:.1f}%"):
                     c1, c2 = st.columns(2)
                     c1.markdown(f"**Dominant Driver:** `{exp.get('dominant_risk_driver', 'N/A')}`")
                     c2.markdown(f"**Base Log-Odds:** `{exp.get('base_value', 0):+.3f}`")
-                    st.markdown(f"**Decision Support:** {icon} {action_clean}")
+                    st.markdown(f"**Decision Support:** {icon} {action_clean}", unsafe_allow_html=True)
                     all_c = exp.get("top_risk_drivers", []) + exp.get("top_mitigating_factors", [])
                     if all_c:
                         rows = [{"Feature": d["feature"], "Value": f"{d['value']:.4f}",
                                   "SHAP": f"{d['shap_value']:+.4f}",
-                                  "Direction": "↑ Risk" if d["shap_value"] > 0 else "↓ Mitigating"}
+                                  "Direction": "+ Risk" if d["shap_value"] > 0 else "- Mitigating"}
                                 for d in sorted(all_c, key=lambda x: abs(x["shap_value"]), reverse=True)]
                         st.dataframe(pd.DataFrame(rows), use_container_width=True, hide_index=True)
     with tab4:
         if not feat_importance_df.empty:
-            st.markdown('<div class="section-header"><h3>📊 Unified Feature Importance (Top 15)</h3></div>',
+            st.markdown('<div class="section-header"><span class="material-symbols-outlined icon-inline">bar_chart</span><span class="section-title">Unified Feature Importance (Top 15)</span></div>',
                         unsafe_allow_html=True)
             st.caption("Ranked by Mean |SHAP| (log-odds). Permutation = PR-AUC drop. Native LightGBM gain also shown.")
             top_feats = feat_importance_df.head(15)
@@ -715,14 +688,11 @@ def page_explainability(feat_importance_df, interp_summary):
 # PAGE 5 -- DATASET EXPLORER
 # ---------------------------------------------------------------------------
 def page_dataset_explorer(df_train):
-    st.markdown(
-        '<div class="pg-hero">'
-        '<span class="pg-badge">AI4I 2020</span>'
-        '<span class="pg-badge pg-badge-blue">EDA</span>'
-        '<h1>📋 Dataset Explorer</h1>'
-        '<p>Interactive exploration of the AI4I 2020 Predictive Maintenance dataset (development split, 8,000 records).</p>'
-        '</div>',
-        unsafe_allow_html=True,
+    page_header(
+        title="Dataset Explorer",
+        description="Interactive exploration of the AI4I 2020 Predictive Maintenance dataset (development split, 8,000 records).",
+        badges=["AI4I 2020", "EDA"],
+        icon="dataset"
     )
     n_fail  = int(df_train["Machine failure"].sum()) if "Machine failure" in df_train.columns else 0
     n_total = len(df_train)
@@ -812,18 +782,15 @@ def page_dataset_explorer(df_train):
 # PAGE 6 -- SYSTEM INFO
 # ---------------------------------------------------------------------------
 def page_system_info(thresh_cfg):
-    st.markdown(
-        '<div class="pg-hero">'
-        '<span class="pg-badge">Production</span>'
-        '<span class="pg-badge pg-badge-blue">Reproducible</span>'
-        '<h1>🗂 System Information & Reproducibility</h1>'
-        '<p>Pipeline architecture, anti-leakage audit, threshold configuration, and physics feature dictionary.</p>'
-        '</div>',
-        unsafe_allow_html=True,
+    page_header(
+        title="System Information & Reproducibility",
+        description="Pipeline architecture, anti-leakage audit, threshold configuration, and physics feature dictionary.",
+        badges=["Production", "Reproducible"],
+        icon="terminal"
     )
     c1, c2 = st.columns(2, gap="large")
     with c1:
-        st.markdown('<div class="section-header"><h3>🏗 Pipeline Architecture</h3></div>',
+        st.markdown('<div class="section-header"><span class="material-symbols-outlined icon-inline">account_tree</span><span class="section-title">Pipeline Architecture</span></div>',
                     unsafe_allow_html=True)
         st.code(
             "final_pipeline.joblib\n"
@@ -838,19 +805,19 @@ def page_system_info(thresh_cfg):
             "                     CalibratedClassifierCV)",
             language=None,
         )
-        st.markdown('<div class="section-header"><h3>🔒 Anti-Leakage Guarantees</h3></div>',
+        st.markdown('<div class="section-header"><span class="material-symbols-outlined icon-inline">lock</span><span class="section-title">Anti-Leakage Guarantees</span></div>',
                     unsafe_allow_html=True)
         for g in [
-            "✅ HDF/PWF/OSF/TWF/RNF never enter the inference pipeline",
-            "✅ UDI / Product ID removed before feature extraction",
-            "✅ Holdout set frozen until Phase 5 final evaluation",
-            "✅ OOF predictions used for threshold selection (never holdout)",
-            "✅ Stacking features generated using strictly OOF auxiliary predictions",
-            "✅ 34 / 34 automated tests passing (including anti-leakage assertion)",
+            "HDF/PWF/OSF/TWF/RNF never enter the inference pipeline",
+            "UDI / Product ID removed before feature extraction",
+            "Holdout set frozen until Phase 5 final evaluation",
+            "OOF predictions used for threshold selection (never holdout)",
+            "Stacking features generated using strictly OOF auxiliary predictions",
+            "34 / 34 automated tests passing (including anti-leakage assertion)",
         ]:
-            st.markdown(f'<div class="feat-chip">{g}</div><br>', unsafe_allow_html=True)
+            st.markdown(f'<div class="feat-chip">{icon_html("verified", "icon-success")} <span>{g}</span></div><br>', unsafe_allow_html=True)
     with c2:
-        st.markdown('<div class="section-header"><h3>🏛 Threshold Configuration</h3></div>',
+        st.markdown('<div class="section-header"><span class="material-symbols-outlined icon-inline">settings_suggest</span><span class="section-title">Threshold Configuration</span></div>',
                     unsafe_allow_html=True)
         cfg_rows = [
             ("Optimal F1 Threshold (OOF-estimated)", f"{thresh_cfg.get('optimal_f1_threshold', 0):.6f}"),
@@ -862,7 +829,7 @@ def page_system_info(thresh_cfg):
         ]
         st.dataframe(pd.DataFrame(cfg_rows, columns=["Parameter", "Value"]),
                      use_container_width=True, hide_index=True)
-        st.markdown('<div class="section-header"><h3>📐 Physics Feature Dictionary</h3></div>',
+        st.markdown('<div class="section-header"><span class="material-symbols-outlined icon-inline">menu_book</span><span class="section-title">Physics Feature Dictionary</span></div>',
                     unsafe_allow_html=True)
         feat_desc = [
             ("temp_diff",                    "Process T - Air T [K]; HDF convective gradient"),
@@ -885,11 +852,11 @@ def page_system_info(thresh_cfg):
     if opt_path.exists():
         with open(opt_path) as f:
             opt_params = json.load(f)
-        with st.expander("🔬 Optuna Best Hyperparameters (50+ trials per model)"):
+        with st.expander("Optuna Best Hyperparameters (50+ trials per model)", icon=":material/tune:"):
             st.json(opt_params)
     mc_path = REPORTS_DIR / "model_comparison.csv"
     if mc_path.exists():
-        with st.expander("📊 Full Model Comparison Table (Phase 4)"):
+        with st.expander("Full Model Comparison Table (Phase 4)", icon=":material/table_chart:"):
             st.dataframe(pd.read_csv(mc_path), use_container_width=True, hide_index=True)
 
 
@@ -902,7 +869,7 @@ def main():
             pipeline = load_pipeline()
             model_loaded = True
         except Exception as e:
-            st.error(f"❌ Could not load model pipeline: {e}")
+            st.error(f"Could not load model pipeline: {e}", icon=":material/error:")
             model_loaded = False
             pipeline = None
     thresh_cfg         = load_threshold_cfg()
