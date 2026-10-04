@@ -1,0 +1,409 @@
+{
+    "global_importance_ranking": [
+        {
+            "feature": "Tool wear [min]",
+            "mean_abs_shap": 0.3780365049859206,
+            "perm_importance_mean": 0.12691395080521678,
+            "perm_importance_std": 0.006037651430176029,
+            "native_gain": 26052.316206564134,
+            "native_split": 357
+        },
+        {
+            "feature": "Rotational speed [rpm]",
+            "mean_abs_shap": 0.25029014238994407,
+            "perm_importance_mean": 0.03368425253155496,
+            "perm_importance_std": 0.004476916604899001,
+            "native_gain": 18465.64892843895,
+            "native_split": 246
+        },
+        {
+            "feature": "power_w",
+            "mean_abs_shap": 0.22135982061327586,
+            "perm_importance_mean": 0.023539558358320202,
+            "perm_importance_std": 0.007123307121029208,
+            "native_gain": 3729.9017187235113,
+            "native_split": 236
+        },
+        {
+            "feature": "speed_torque_ratio",
+            "mean_abs_shap": 0.2187034894961918,
+            "perm_importance_mean": 0.1358287383309209,
+            "perm_importance_std": 0.015158951812972866,
+            "native_gain": 34432.2292278013,
+            "native_split": 324
+        },
+        {
+            "feature": "overstrain_ratio",
+            "mean_abs_shap": 0.13102097149465125,
+            "perm_importance_mean": 0.21500458383264656,
+            "perm_importance_std": 0.025888155950448362,
+            "native_gain": 26026.304051111147,
+            "native_split": 327
+        },
+        {
+            "feature": "low_speed_low_tempdiff",
+            "mean_abs_shap": 0.12066084759496733,
+            "perm_importance_mean": 0.28133509259138345,
+            "perm_importance_std": 0.007146137693332682,
+            "native_gain": 23521.172968409468,
+            "native_split": 285
+        },
+        {
+            "feature": "Air temperature [K]",
+            "mean_abs_shap": 0.0770375544021332,
+            "perm_importance_mean": 0.006286740828401327,
+            "perm_importance_std": 0.00041682195959911057,
+            "native_gain": 869.0668851033017,
+            "native_split": 229
+        },
+        {
+            "feature": "Torque [Nm]",
+            "mean_abs_shap": 0.0709898500016464,
+            "perm_importance_mean": 0.011312926105106858,
+            "perm_importance_std": 0.0035752601040324535,
+            "native_gain": 2538.663105572906,
+            "native_split": 172
+        },
+        {
+            "feature": "tool_wear_in_critical_band",
+            "mean_abs_shap": 0.06670086512807935,
+            "perm_importance_mean": 0.0004964587630407636,
+            "perm_importance_std": 0.0014760320625122883,
+            "native_gain": 4930.9008271317,
+            "native_split": 17
+        },
+        {
+            "feature": "wear_torque",
+            "mean_abs_shap": 0.06375253989802003,
+            "perm_importance_mean": -8.931195755903509e-05,
+            "perm_importance_std": 0.001609382397236295,
+            "native_gain": 1893.1024822846605,
+            "native_split": 108
+        },
+        {
+            "feature": "temp_ratio",
+            "mean_abs_shap": 0.06304337896971544,
+            "perm_importance_mean": 0.008356314760501938,
+            "perm_importance_std": 0.0009153683084431887,
+            "native_gain": 1419.306780575288,
+            "native_split": 115
+        },
+        {
+            "feature": "Process temperature [K]",
+            "mean_abs_shap": 0.04608628193792405,
+            "perm_importance_mean": 0.008856320239950666,
+            "perm_importance_std": 0.002166499797575051,
+            "native_gain": 1436.8118108789583,
+            "native_split": 159
+        },
+        {
+            "feature": "power_distance_to_safe_band",
+            "mean_abs_shap": 0.038279339824266324,
+            "perm_importance_mean": 0.010450727325232289,
+            "perm_importance_std": 0.002668446869865189,
+            "native_gain": 27438.397646204514,
+            "native_split": 100
+        },
+        {
+            "feature": "power_above_limit",
+            "mean_abs_shap": 0.02804597682393033,
+            "perm_importance_mean": 0.017530708744963854,
+            "perm_importance_std": 0.005203197330227819,
+            "native_gain": 15341.288894563913,
+            "native_split": 105
+        },
+        {
+            "feature": "power_below_limit",
+            "mean_abs_shap": 0.020681453481261304,
+            "perm_importance_mean": 0.018462775663120733,
+            "perm_importance_std": 0.000952360411434583,
+            "native_gain": 10478.27133447479,
+            "native_split": 117
+        },
+        {
+            "feature": "temp_diff",
+            "mean_abs_shap": 0.019639131215110635,
+            "perm_importance_mean": 0.0038784193913288688,
+            "perm_importance_std": 0.0004110614678478457,
+            "native_gain": 1292.6201745741953,
+            "native_split": 48
+        },
+        {
+            "feature": "tool_wear_critical_proximity",
+            "mean_abs_shap": 0.018250456533089914,
+            "perm_importance_mean": -0.0008950010496658001,
+            "perm_importance_std": 0.0008089966493345985,
+            "native_gain": 160.4294033050537,
+            "native_split": 7
+        },
+        {
+            "feature": "Type_H",
+            "mean_abs_shap": 0.017551503569214606,
+            "perm_importance_mean": 0.0,
+            "perm_importance_std": 0.0,
+            "native_gain": 155.95791959762573,
+            "native_split": 13
+        },
+        {
+            "feature": "Type_L",
+            "mean_abs_shap": 0.00871805310584012,
+            "perm_importance_mean": 0.0010973521185510871,
+            "perm_importance_std": 0.0010617120219590086,
+            "native_gain": 108.76184129714966,
+            "native_split": 9
+        },
+        {
+            "feature": "Type_M",
+            "mean_abs_shap": 0.005782967483107226,
+            "perm_importance_mean": 0.00013898601398603104,
+            "perm_importance_std": 0.00011348160521636747,
+            "native_gain": 21.281660556793213,
+            "native_split": 4
+        },
+        {
+            "feature": "is_known_type",
+            "mean_abs_shap": 0.0,
+            "perm_importance_mean": 0.0,
+            "perm_importance_std": 0.0,
+            "native_gain": 0.0,
+            "native_split": 0
+        }
+    ],
+    "top_features_summary": {
+        "top_1": "Tool wear [min]",
+        "top_2": "Rotational speed [rpm]",
+        "top_3": "power_w",
+        "top_4": "speed_torque_ratio",
+        "top_5": "overstrain_ratio"
+    },
+    "case_studies": {
+        "row_25": {
+            "title": "Case Study 1: Heat Dissipation Failure (HDF)",
+            "raw_inputs": {
+                "Type": "L",
+                "Air temperature [K]": 302.4,
+                "Process temperature [K]": 310.2,
+                "Rotational speed [rpm]": 1351,
+                "Torque [Nm]": 45.1,
+                "Tool wear [min]": 168
+            },
+            "explanation": {
+                "failure_probability": 0.9529021218336652,
+                "base_value": -4.597516917832002,
+                "dominant_risk_driver": "low_speed_low_tempdiff",
+                "recommended_maintenance_action": "WARNING: Ineffective convective cooling detected. Inspect coolant flow, radiator fan, and clean thermal heat sink.",
+                "top_risk_drivers": [
+                    {
+                        "feature": "low_speed_low_tempdiff",
+                        "value": 23.199999999999662,
+                        "shap_value": 5.211407830091673,
+                        "abs_shap": 5.211407830091673
+                    },
+                    {
+                        "feature": "Rotational speed [rpm]",
+                        "value": 1351.0,
+                        "shap_value": 1.2516578488031906,
+                        "abs_shap": 1.2516578488031906
+                    },
+                    {
+                        "feature": "speed_torque_ratio",
+                        "value": 29.95565343779039,
+                        "shap_value": 0.47747993709402725,
+                        "abs_shap": 0.47747993709402725
+                    }
+                ],
+                "top_mitigating_factors": [
+                    {
+                        "feature": "power_w",
+                        "value": 6380.585151416381,
+                        "shap_value": -0.27770064706269265,
+                        "abs_shap": 0.27770064706269265
+                    },
+                    {
+                        "feature": "overstrain_ratio",
+                        "value": 0.6887999999373818,
+                        "shap_value": -0.03713363802440769,
+                        "abs_shap": 0.03713363802440769
+                    },
+                    {
+                        "feature": "tool_wear_in_critical_band",
+                        "value": 0.0,
+                        "shap_value": -0.015059829644633238,
+                        "abs_shap": 0.015059829644633238
+                    }
+                ]
+            }
+        },
+        "row_34": {
+            "title": "Case Study 2: Mechanical Power Failure (PWF)",
+            "raw_inputs": {
+                "Type": "M",
+                "Air temperature [K]": 298.9,
+                "Process temperature [K]": 308.2,
+                "Rotational speed [rpm]": 1372,
+                "Torque [Nm]": 63.6,
+                "Tool wear [min]": 30
+            },
+            "explanation": {
+                "failure_probability": 0.9694697325518852,
+                "base_value": -4.597516917832002,
+                "dominant_risk_driver": "power_above_limit",
+                "recommended_maintenance_action": "WARNING: Mechanical power draw outside safe operating band (3.5kW - 9.0kW). Check spindle motor drive and inverter.",
+                "top_risk_drivers": [
+                    {
+                        "feature": "power_above_limit",
+                        "value": 137.76205593741543,
+                        "shap_value": 2.782259972751965,
+                        "abs_shap": 2.782259972751965
+                    },
+                    {
+                        "feature": "power_distance_to_safe_band",
+                        "value": 137.76205593741543,
+                        "shap_value": 2.3998452623769975,
+                        "abs_shap": 2.3998452623769975
+                    },
+                    {
+                        "feature": "speed_torque_ratio",
+                        "value": 21.572326704837632,
+                        "shap_value": 2.10559900988394,
+                        "abs_shap": 2.10559900988394
+                    }
+                ],
+                "top_mitigating_factors": [
+                    {
+                        "feature": "Tool wear [min]",
+                        "value": 30.0,
+                        "shap_value": -0.12080804197049964,
+                        "abs_shap": 0.12080804197049964
+                    },
+                    {
+                        "feature": "low_speed_low_tempdiff",
+                        "value": 0.0,
+                        "shap_value": -0.08108128284830336,
+                        "abs_shap": 0.08108128284830336
+                    },
+                    {
+                        "feature": "overstrain_ratio",
+                        "value": 0.15899999998675,
+                        "shap_value": -0.07860699293026542,
+                        "abs_shap": 0.07860699293026542
+                    }
+                ]
+            }
+        },
+        "row_35": {
+            "title": "Case Study 3: Overstrain Failure (OSF)",
+            "raw_inputs": {
+                "Type": "L",
+                "Air temperature [K]": 298.7,
+                "Process temperature [K]": 309.8,
+                "Rotational speed [rpm]": 1354,
+                "Torque [Nm]": 53.3,
+                "Tool wear [min]": 212
+            },
+            "explanation": {
+                "failure_probability": 0.9660674382692882,
+                "base_value": -4.597516917832002,
+                "dominant_risk_driver": "overstrain_ratio",
+                "recommended_maintenance_action": "CRITICAL: Tool overstrain threshold exceeded. Replace cutting insert immediately and inspect chuck/tool holder.",
+                "top_risk_drivers": [
+                    {
+                        "feature": "overstrain_ratio",
+                        "value": 1.0272363635429784,
+                        "shap_value": 4.340075379424817,
+                        "abs_shap": 4.340075379424817
+                    },
+                    {
+                        "feature": "Tool wear [min]",
+                        "value": 212.0,
+                        "shap_value": 1.49869692412122,
+                        "abs_shap": 1.49869692412122
+                    },
+                    {
+                        "feature": "speed_torque_ratio",
+                        "value": 25.403376634082992,
+                        "shap_value": 1.1452311445179473,
+                        "abs_shap": 1.1452311445179473
+                    }
+                ],
+                "top_mitigating_factors": [
+                    {
+                        "feature": "low_speed_low_tempdiff",
+                        "value": 0.0,
+                        "shap_value": -0.07300476731623552,
+                        "abs_shap": 0.07300476731623552
+                    },
+                    {
+                        "feature": "Air temperature [K]",
+                        "value": 298.7,
+                        "shap_value": -0.040346621290132355,
+                        "abs_shap": 0.040346621290132355
+                    },
+                    {
+                        "feature": "power_above_limit",
+                        "value": 0.0,
+                        "shap_value": -0.02863041100104577,
+                        "abs_shap": 0.02863041100104577
+                    }
+                ]
+            }
+        },
+        "row_0": {
+            "title": "Case Study 4: Nominal Machine Operation",
+            "raw_inputs": {
+                "Type": "M",
+                "Air temperature [K]": 302.0,
+                "Process temperature [K]": 310.9,
+                "Rotational speed [rpm]": 1456,
+                "Torque [Nm]": 47.2,
+                "Tool wear [min]": 54
+            },
+            "explanation": {
+                "failure_probability": 0.0063320226584008725,
+                "base_value": -4.597516917832002,
+                "dominant_risk_driver": "speed_torque_ratio",
+                "recommended_maintenance_action": "NOMINAL: Machine operating within verified safe physical envelopes. Continue standard monitoring.",
+                "top_risk_drivers": [
+                    {
+                        "feature": "speed_torque_ratio",
+                        "value": 30.847456973570825,
+                        "shap_value": 0.1412045672286382,
+                        "abs_shap": 0.1412045672286382
+                    },
+                    {
+                        "feature": "Air temperature [K]",
+                        "value": 302.0,
+                        "shap_value": 0.09205078539089291,
+                        "abs_shap": 0.09205078539089291
+                    },
+                    {
+                        "feature": "temp_ratio",
+                        "value": 1.029470195266655,
+                        "shap_value": 0.05525372794020279,
+                        "abs_shap": 0.05525372794020279
+                    }
+                ],
+                "top_mitigating_factors": [
+                    {
+                        "feature": "Tool wear [min]",
+                        "value": 54.0,
+                        "shap_value": -0.2721520373422931,
+                        "abs_shap": 0.2721520373422931
+                    },
+                    {
+                        "feature": "Rotational speed [rpm]",
+                        "value": 1456.0,
+                        "shap_value": -0.1324387969611311,
+                        "abs_shap": 0.1324387969611311
+                    },
+                    {
+                        "feature": "power_w",
+                        "value": 7196.676675039402,
+                        "shap_value": -0.12900369348648133,
+                        "abs_shap": 0.12900369348648133
+                    }
+                ]
+            }
+        }
+    }
+}
