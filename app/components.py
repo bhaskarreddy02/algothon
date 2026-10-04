@@ -6,11 +6,13 @@ Reusable, accessible UI components for Streamlit without emojis or gradients.
 import textwrap
 from typing import List, Optional, Dict, Any, Callable
 import streamlit as st
+import streamlit.components.v1 as components
 
 
 def clean_html(s: str) -> str:
-    """Dedent and strip multiline HTML to prevent markdown code block formatting."""
-    return textwrap.dedent(s).strip()
+    """Dedent and strip leading whitespace on lines to prevent markdown code block formatting."""
+    lines = [line.lstrip() for line in textwrap.dedent(s).strip().splitlines()]
+    return "\n".join(lines)
 
 
 def icon_html(name: str, color_class: str = "", style: str = "") -> str:
@@ -94,11 +96,7 @@ def result_verdict_card(probability: float, threshold: float, failure_mode_hint:
 
     reason_block = ""
     if failure_mode_hint:
-        reason_block = f"""
-        <div style="margin-top: 12px; padding: 10px 12px; background-color: var(--pg-surface-subtle); border: 1px solid var(--pg-border-subtle); border-radius: 6px; font-size: 0.83rem; color: var(--pg-text);">
-            <strong style="color: var(--pg-text);">Physical Diagnosis:</strong> {failure_mode_hint}
-        </div>
-        """
+        reason_block = f'<div style="margin-top: 12px; padding: 10px 12px; background-color: var(--pg-surface-subtle); border: 1px solid var(--pg-border-subtle); border-radius: 6px; font-size: 0.83rem; color: var(--pg-text);"><strong style="color: var(--pg-text);">Physical Diagnosis:</strong> {failure_mode_hint}</div>'
 
     # Marker position for decision threshold on bar
     html = clean_html(f"""
@@ -297,11 +295,7 @@ def render_risk_gauge_card(
         if phys.get("in_twf_band"):
             reasons.append("Tool wear reached critical stochastic band [200-240 min]")
         if reasons:
-            diag_hint = f"""
-            <div style="margin-top: 8px; padding: 6px 10px; background-color: var(--pg-surface-subtle); border: 1px solid var(--pg-border-subtle); border-radius: 6px; font-size: 0.74rem; color: var(--pg-text);">
-                <strong style="color: var(--pg-text);">Physics Diagnosis:</strong> {'; '.join(reasons)}
-            </div>
-            """
+            diag_hint = f'<div style="margin-top: 8px; padding: 6px 10px; background-color: var(--pg-surface-subtle); border: 1px solid var(--pg-border-subtle); border-radius: 6px; font-size: 0.74rem; color: var(--pg-text);"><strong style="color: var(--pg-text);">Physics Diagnosis:</strong> {"; ".join(reasons)}</div>'
 
     html = clean_html(f"""
     <div class="risk-gauge-container">
@@ -362,3 +356,438 @@ def render_decision_support(human: Dict[str, Any]) -> None:
     </div>
     """)
     st.markdown(html, unsafe_allow_html=True)
+
+
+def render_3d_digital_twin_background(theme_mode: str = "light") -> None:
+    """
+    Render high-performance 3D industrial milling spindle & orbital telemetry digital twin.
+    Lightweight vanilla Canvas projection running at 60 FPS with pointer-events: none.
+    """
+    mode_str = "dark" if str(theme_mode).lower() == "dark" else "light"
+    html_code = f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+    <meta charset="utf-8">
+    <style>
+      html, body {{
+        margin: 0;
+        padding: 0;
+        width: 100vw;
+        height: 100vh;
+        overflow: hidden;
+        background: transparent !important;
+        pointer-events: none !important;
+      }}
+      #pg-digital-twin-canvas {{
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        display: block;
+        pointer-events: none;
+        z-index: 0;
+      }}
+    </style>
+    </head>
+    <body>
+    <canvas id="pg-digital-twin-canvas"></canvas>
+    <script>
+    (function() {{
+      const themeMode = "{mode_str}";
+      let win = window;
+      let doc = document;
+      let isParent = false;
+      try {{
+        if (window.parent && window.parent.document && window.parent.document.body) {{
+          win = window.parent;
+          doc = window.parent.document;
+          isParent = true;
+        }}
+      }} catch (e) {{
+        win = window;
+        doc = document;
+        isParent = false;
+      }}
+
+      // Update theme if already running on window
+      if (win.__pg_3d_running) {{
+        win.__pg_3d_theme = themeMode;
+        return;
+      }}
+      win.__pg_3d_running = true;
+      win.__pg_3d_theme = themeMode;
+
+      let canvas = doc.getElementById('pg-digital-twin-canvas');
+      if (!canvas) {{
+        canvas = doc.createElement('canvas');
+        canvas.id = 'pg-digital-twin-canvas';
+        canvas.style.position = 'fixed';
+        canvas.style.top = '0';
+        canvas.style.left = '0';
+        canvas.style.width = '100vw';
+        canvas.style.height = '100vh';
+        canvas.style.pointerEvents = 'none';
+        canvas.style.zIndex = '0';
+        canvas.style.display = 'block';
+        if (isParent) {{
+          const appEl = doc.querySelector('.stApp') || doc.body;
+          appEl.insertBefore(canvas, appEl.firstChild);
+        }} else {{
+          doc.body.appendChild(canvas);
+        }}
+      }}
+
+      const ctx = canvas.getContext('2d');
+      let width = win.innerWidth;
+      let height = win.innerHeight;
+      let dpr = win.devicePixelRatio || 1;
+
+      function resize() {{
+        width = win.innerWidth;
+        height = win.innerHeight;
+        dpr = win.devicePixelRatio || 1;
+        canvas.width = Math.floor(width * dpr);
+        canvas.height = Math.floor(height * dpr);
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+        ctx.scale(dpr, dpr);
+      }}
+      win.addEventListener('resize', resize);
+      resize();
+
+      let mouseX = 0, mouseY = 0;
+      let targetTiltX = 0.15, targetTiltY = -0.22;
+      let curTiltX = 0.15, curTiltY = -0.22;
+      let rotAngle = 0;
+      let scanY = -1;
+      let scanDir = 1;
+      let lastMoveTime = Date.now();
+
+      win.addEventListener('mousemove', (e) => {{
+        lastMoveTime = Date.now();
+        mouseX = (e.clientX / width) * 2 - 1;
+        mouseY = (e.clientY / height) * 2 - 1;
+        targetTiltX = mouseY * 0.22;
+        targetTiltY = mouseX * 0.32;
+      }});
+
+      // -------------------------------------------------------------
+      // 3D INDUSTRIAL MILLING SPINDLE & CUTTER GEOMETRY
+      // -------------------------------------------------------------
+      const nodes = [];
+      const edges = [];
+
+      // Part A: Collet / Tool Holder (Tapered ISO Toolholder)
+      const colletR = 80;
+      const colletH = 140;
+      const colletY = -180;
+      const colletRings = 4;
+      const segs = 14;
+
+      for (let r = 0; r <= colletRings; r++) {{
+        const y = colletY + (r / colletRings) * colletH;
+        const rad = colletR * (1.15 - 0.28 * (r / colletRings));
+        const ringStart = nodes.length;
+        for (let s = 0; s < segs; s++) {{
+          const theta = (s / segs) * Math.PI * 2;
+          nodes.push({{
+            x: Math.cos(theta) * rad,
+            y: y,
+            z: Math.sin(theta) * rad,
+            type: 'holder',
+            size: 1.8
+          }});
+          if (s > 0) edges.push([ringStart + s - 1, ringStart + s, 'subtle']);
+          if (s === segs - 1) edges.push([ringStart + s, ringStart, 'subtle']);
+          if (r > 0) edges.push([ringStart + s - segs, ringStart + s, 'subtle']);
+        }}
+      }}
+
+      // Part B: Spindle Shaft / Shank
+      const shaftR = 48;
+      const shaftTopY = colletY + colletH;
+      const shaftH = 120;
+      const shaftRings = 4;
+
+      for (let r = 1; r <= shaftRings; r++) {{
+        const y = shaftTopY + (r / shaftRings) * shaftH;
+        const ringStart = nodes.length;
+        for (let s = 0; s < segs; s++) {{
+          const theta = (s / segs) * Math.PI * 2;
+          nodes.push({{
+            x: Math.cos(theta) * shaftR,
+            y: y,
+            z: Math.sin(theta) * shaftR,
+            type: 'shaft',
+            size: 2.0
+          }});
+          if (s > 0) edges.push([ringStart + s - 1, ringStart + s, 'subtle']);
+          if (s === segs - 1) edges.push([ringStart + s, ringStart, 'subtle']);
+          edges.push([ringStart + s - segs, ringStart + s, 'subtle']);
+        }}
+      }}
+
+      // Part C: Milling Flutes (Helical Cutting Edges - Tool Wear TWF Zone)
+      const fluteTopY = shaftTopY + shaftH;
+      const fluteH = 160;
+      const fluteR = 44;
+      const fluteSteps = 24;
+      const numFlutes = 4;
+
+      for (let f = 0; f < numFlutes; f++) {{
+        const fluteBaseAngle = (f / numFlutes) * Math.PI * 2;
+        let prevIdx = -1;
+        for (let i = 0; i <= fluteSteps; i++) {{
+          const frac = i / fluteSteps;
+          const y = fluteTopY + frac * fluteH;
+          const rad = fluteR * (1.0 - 0.28 * Math.pow(frac, 2.5));
+          const theta = fluteBaseAngle + frac * Math.PI * 1.8;
+          const idx = nodes.length;
+          nodes.push({{
+            x: Math.cos(theta) * rad,
+            y: y,
+            z: Math.sin(theta) * rad,
+            type: 'flute',
+            fluteId: f,
+            size: 2.5
+          }});
+          if (prevIdx !== -1) {{
+            edges.push([prevIdx, idx, 'flute']);
+          }}
+          prevIdx = idx;
+        }}
+      }}
+
+      // Part D: Cutting End Tip (Pointed Apex)
+      const tipApexIdx = nodes.length;
+      nodes.push({{
+        x: 0,
+        y: fluteTopY + fluteH + 28,
+        z: 0,
+        type: 'tip',
+        size: 3.2
+      }});
+      for (let f = 0; f < numFlutes; f++) {{
+        const fluteEndIdx = tipApexIdx - 1 - (numFlutes - 1 - f) * (fluteSteps + 1);
+        edges.push([fluteEndIdx, tipApexIdx, 'flute']);
+      }}
+
+      // Part E: Ambient Telemetry Particles
+      const ambientNodes = [];
+      for (let i = 0; i < 45; i++) {{
+        ambientNodes.push({{
+          x: (Math.random() - 0.5) * 650,
+          y: (Math.random() - 0.5) * 700,
+          z: (Math.random() - 0.5) * 550,
+          vx: (Math.random() - 0.5) * 0.25,
+          vy: (Math.random() - 0.5) * 0.25,
+          vz: (Math.random() - 0.5) * 0.25,
+          size: Math.random() * 2.2 + 1.2
+        }});
+      }}
+
+      // Part F: 3D Orbital Rings (HDF, PWF, TWF Physics Channels)
+      const orbits = [
+        {{ radX: 250, radZ: 215, y: -80, tilt: 0.32, speed: 0.0075, angle: 0, dotSize: 4.5, label: "HDF Temp Dissipation" }},
+        {{ radX: 320, radZ: 275, y: 35,  tilt: -0.27, speed: -0.006, angle: 2.1, dotSize: 5.0, label: "PWF Mechanical Power" }},
+        {{ radX: 390, radZ: 335, y: 155, tilt: 0.18, speed: 0.005, angle: 4.2, dotSize: 6.0, label: "TWF Wear Strain" }}
+      ];
+
+      // -------------------------------------------------------------
+      // 3D PERSPECTIVE PROJECTION
+      // -------------------------------------------------------------
+      function project(p, cx, cy, rotY, tiltX) {{
+        const cosY = Math.cos(rotY), sinY = Math.sin(rotY);
+        const x1 = p.x * cosY + p.z * sinY;
+        const y1 = p.y;
+        const z1 = -p.x * sinY + p.z * cosY;
+
+        const cosX = Math.cos(tiltX), sinX = Math.sin(tiltX);
+        const y2 = y1 * cosX - z1 * sinX;
+        const z2 = y1 * sinX + z1 * cosX;
+
+        const fov = 780;
+        const distance = 820;
+        const scale = fov / (distance + z2);
+
+        return {{
+          x: cx + x1 * scale,
+          y: cy + y2 * scale,
+          scale: scale,
+          depth: z2
+        }};
+      }}
+
+      // -------------------------------------------------------------
+      // 60 FPS RENDER LOOP
+      // -------------------------------------------------------------
+      function animate(timestamp) {{
+        ctx.clearRect(0, 0, width, height);
+
+        const isDark = (win.__pg_3d_theme === 'dark');
+
+        const cMesh = isDark ? 'rgba(163, 158, 150,' : 'rgba(107, 100, 92,';
+        const cFlute = isDark ? 'rgba(255, 138, 61,' : 'rgba(232, 89, 12,';
+        const cRing = isDark ? 'rgba(75, 75, 75, 0.45)' : 'rgba(213, 206, 191, 0.48)';
+        const cBeaconGlow = isDark ? 'rgba(255, 138, 61, 0.38)' : 'rgba(232, 89, 12, 0.32)';
+        const cBeaconCore = isDark ? '#F2EFEA' : '#2B2723';
+        const cBeaconSpark = isDark ? '#FF8A3D' : '#E8590C';
+        const cAmbient = isDark ? 'rgba(163, 158, 150,' : 'rgba(107, 100, 92,';
+        const cLaser = isDark ? 'rgba(255, 138, 61,' : 'rgba(232, 89, 12,';
+
+        // Idle harmonic floating
+        const now = timestamp || Date.now();
+        const t = now * 0.001;
+        if (Date.now() - lastMoveTime > 2500) {{
+          targetTiltX = Math.sin(t * 0.35) * 0.12 + 0.08;
+          targetTiltY = Math.cos(t * 0.30) * 0.16;
+        }}
+
+        curTiltX += (targetTiltX - curTiltX) * 0.05;
+        curTiltY += (targetTiltY - curTiltY) * 0.05;
+        rotAngle += 0.007;
+
+        const cx = width * 0.50;
+        const cy = height * 0.48;
+
+        scanY += 0.0055 * scanDir;
+        if (scanY > 1) {{ scanY = 1; scanDir = -1; }}
+        if (scanY < -1) {{ scanY = -1; scanDir = 1; }}
+
+        // Ambient particles
+        ambientNodes.forEach(pt => {{
+          pt.x += pt.vx; pt.y += pt.vy; pt.z += pt.vz;
+          if (Math.abs(pt.x) > 360) pt.vx *= -1;
+          if (Math.abs(pt.y) > 390) pt.vy *= -1;
+          if (Math.abs(pt.z) > 310) pt.vz *= -1;
+
+          const pr = project(pt, cx, cy, rotAngle * 0.25, curTiltX);
+          const alpha = Math.max(0.08, Math.min(0.40, (pr.depth + 300) / 600));
+          ctx.fillStyle = `${{cAmbient}} ${{alpha * 0.55}})`;
+          ctx.beginPath();
+          ctx.arc(pr.x, pr.y, pt.size * pr.scale * 0.8, 0, Math.PI * 2);
+          ctx.fill();
+        }});
+
+        // 1. Orbital Rings & Telemetry Beacons
+        orbits.forEach(orb => {{
+          orb.angle += orb.speed;
+          const pts = [];
+          const ringSteps = 64;
+          for (let i = 0; i <= ringSteps; i++) {{
+            const theta = (i / ringSteps) * Math.PI * 2;
+            const px = Math.cos(theta) * orb.radX;
+            const pz = Math.sin(theta) * orb.radZ;
+            const py = orb.y + px * Math.sin(orb.tilt);
+            pts.push(project({{ x: px, y: py, z: pz }}, cx, cy, rotAngle * 0.35, curTiltX));
+          }}
+
+          ctx.strokeStyle = cRing;
+          ctx.lineWidth = 1.0;
+          ctx.setLineDash([4, 4]);
+          ctx.beginPath();
+          pts.forEach((p, idx) => {{
+            if (idx === 0) ctx.moveTo(p.x, p.y);
+            else ctx.lineTo(p.x, p.y);
+          }});
+          ctx.stroke();
+          ctx.setLineDash([]);
+
+          // Orbiting telemetry beacon
+          const bX = Math.cos(orb.angle) * orb.radX;
+          const bZ = Math.sin(orb.angle) * orb.radZ;
+          const bY = orb.y + bX * Math.sin(orb.tilt);
+          const bProj = project({{ x: bX, y: bY, z: bZ }}, cx, cy, rotAngle * 0.35, curTiltX);
+
+          // Glow
+          const grad = ctx.createRadialGradient(bProj.x, bProj.y, 0, bProj.x, bProj.y, 14 * bProj.scale);
+          grad.addColorStop(0, cBeaconGlow);
+          grad.addColorStop(1, 'rgba(0,0,0,0)');
+          ctx.fillStyle = grad;
+          ctx.beginPath();
+          ctx.arc(bProj.x, bProj.y, 14 * bProj.scale, 0, Math.PI * 2);
+          ctx.fill();
+
+          // Body
+          ctx.fillStyle = cBeaconCore;
+          ctx.beginPath();
+          ctx.arc(bProj.x, bProj.y, orb.dotSize * bProj.scale * 0.8, 0, Math.PI * 2);
+          ctx.fill();
+
+          // Center spark
+          ctx.fillStyle = cBeaconSpark;
+          ctx.beginPath();
+          ctx.arc(bProj.x, bProj.y, 2.0 * bProj.scale, 0, Math.PI * 2);
+          ctx.fill();
+        }});
+
+        // 2. Project Spindle Nodes
+        const projNodes = nodes.map(n => project(n, cx, cy, rotAngle, curTiltX));
+
+        // 3. Draw Wireframe Edges
+        edges.forEach(([i1, i2, style]) => {{
+          const p1 = projNodes[i1];
+          const p2 = projNodes[i2];
+          const avgDepth = (p1.depth + p2.depth) * 0.5;
+          const depthAlpha = Math.max(0.08, Math.min(0.55, (avgDepth + 200) / 400));
+
+          ctx.beginPath();
+          ctx.moveTo(p1.x, p1.y);
+          ctx.lineTo(p2.x, p2.y);
+
+          if (style === 'flute') {{
+            ctx.strokeStyle = `${{cFlute}} ${{depthAlpha * 0.75}})`;
+            ctx.lineWidth = 1.35 * p1.scale;
+          }} else {{
+            ctx.strokeStyle = `${{cMesh}} ${{depthAlpha * 0.32}})`;
+            ctx.lineWidth = 0.85 * p1.scale;
+          }}
+          ctx.stroke();
+        }});
+
+        // 4. Draw Spindle Vertices
+        projNodes.forEach((p, idx) => {{
+          const orig = nodes[idx];
+          const depthAlpha = Math.max(0.12, Math.min(0.85, (p.depth + 200) / 400));
+
+          if (orig.type === 'flute' || orig.type === 'tip') {{
+            ctx.fillStyle = `${{cFlute}} ${{depthAlpha}})`;
+          }} else {{
+            ctx.fillStyle = isDark ? `rgba(242, 239, 234, ${{depthAlpha * 0.60}})` : `rgba(43, 39, 35, ${{depthAlpha * 0.65}})`;
+          }}
+
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, orig.size * p.scale * 0.75, 0, Math.PI * 2);
+          ctx.fill();
+        }});
+
+        // 5. Sweeping Laser Telemetry Scan
+        const scanWorldY = scanY * 230 + 15;
+        const scanLeft = project({{ x: -290, y: scanWorldY, z: 0 }}, cx, cy, rotAngle * 0.2, curTiltX);
+        const scanRight = project({{ x: 290, y: scanWorldY, z: 0 }}, cx, cy, rotAngle * 0.2, curTiltX);
+
+        const laserGrad = ctx.createLinearGradient(scanLeft.x, scanLeft.y, scanRight.x, scanRight.y);
+        laserGrad.addColorStop(0, `${{cLaser}} 0)`);
+        laserGrad.addColorStop(0.2, `${{cLaser}} 0.25)`);
+        laserGrad.addColorStop(0.5, `${{cLaser}} 0.50)`);
+        laserGrad.addColorStop(0.8, `${{cLaser}} 0.25)`);
+        laserGrad.addColorStop(1, `${{cLaser}} 0)`);
+
+        ctx.strokeStyle = laserGrad;
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(scanLeft.x, scanLeft.y);
+        ctx.lineTo(scanRight.x, scanRight.y);
+        ctx.stroke();
+
+        win.requestAnimationFrame(animate);
+      }}
+
+      win.requestAnimationFrame(animate);
+    }})();
+    </script>
+    </body>
+    </html>
+    """
+    components.html(html_code, height=0)

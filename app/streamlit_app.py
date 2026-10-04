@@ -36,6 +36,7 @@ from app.theme import apply_theme, get_theme
 from app.components import (
     page_header, chip_html, compact_physics_card, result_verdict_card, icon_html,
     render_sensor_control, render_stat_cards, render_risk_gauge_card, render_decision_support,
+    render_3d_digital_twin_background,
 )
 
 # ---------------------------------------------------------------------------
@@ -1105,6 +1106,9 @@ def page_system_info(thresh_cfg):
 # MAIN
 # ---------------------------------------------------------------------------
 def main():
+    with st.container(key="pg_3d_bg"):
+        render_3d_digital_twin_background(st.session_state.get("theme_mode", "light"))
+
     with st.spinner("Loading PredictiveGuard production pipeline..."):
         try:
             pipeline = load_pipeline()

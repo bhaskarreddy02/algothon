@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>3D Industrial Digital Twin Background</title>
+<style>
+  body, html {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background-color: #FAF8F5;
+  }
+  #digital-twin-canvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
+</style>
+</head>
+<body>
+<canvas id="digital-twin-canvas"></canvas>
+<script>
+(function() {
+  const canvas = document.getElementById('digital-twin-canvas');
+  const ctx = canvas.getContext('2d');
+
+  let width, height, dpr;
+  let mouseX = 0, mouseY = 0;
+  let targetTiltX = 0, targetTiltY = 0;
+  let curTiltX = 0.2, curTiltY = -0.3;
+  let rotAngle = 0;
+  let scanY = -1;
+  let scanDir = 1;
+
+  function resize() {
+    dpr = window.devicePixelRatio || 1;
+    width = window.innerWidth;
+    height = window.innerHeight;
+    canvas.width = width * dpr;
+    canvas.height = height * dpr;
+    ctx.scale(dpr, dpr);
+  }
+  window.addEventListener('resize', resize);
+  resize();
+
+  window.addEventListener('mousemove', (e) => {
+    mouseX = (e.clientX / width) * 2 - 1;
+    mouseY = (e.clientY / height) * 2 - 1;
+    targetTiltX = mouseY * 0.25;
+    targetTiltY = mouseX * 0.35;
+  });
+
+  // -------------------------------------------------------------
+  // BUILD 3D INDUSTRIAL SPINDLE / TOOL WIREFRAME VERTICES & EDGES
+  // -------------------------------------------------------------
+  const nodes = [];
+  const edges = [];
+
+  // Central Spindle Tool geometry
+  // Part A: Collet / Tool Holder (wider tapered top)
+  const colletR = 75;
+  const colletH = 140;
+  const colletY = -170;
+  const colletRings = 4;
+  const segs = 14;
+
+  for (let r = 0; r <= colletRings; r++) {
+    const y = colletY + (r / colletRings) * colletH;
+    const rad = colletR * (1.15 - 0.25 * (r / colletRings));
+    const ringStart = nodes.length;
+    for (let s = 0; s < segs; s++) {
+      const theta = (s / segs) * Math.PI * 2;
+      nodes.push({
+        x: Math.cos(theta) * rad,
+        y: y,
+        z: Math.sin(theta) * rad,
+        type: 'holder',
+        size: 1.8
+      });
+      // Edge around ring
+      if (s > 0) edges.push([ringStart + s - 1, ringStart + s, 'subtle']);
+      if (s === segs - 1) edges.push([ringStart + s, ringStart, 'subtle']);
+      // Vertical edge to previous ring
+      if (r > 0) edges.push([ringStart + s - segs, ringStart + s, 'subtle']);
+    }
+  }
+
+  // Part B: Tool Shank / Spindle Shaft
+  const shaftR = 48;
+  const shaftTopY = colletY + colletH;
+  const shaftH = 120;
+  const shaftRings = 4;
+
+  for (let r = 1; r <= shaftRings; r++) {
+    const y = shaftTopY + (r / shaftRings) * shaftH;
+    const ringStart = nodes.length;
+    for (let s = 0; s < segs; s++) {
+      const theta = (s / segs) * Math.PI * 2;
+      nodes.push({
+        x: Math.cos(theta) * shaftR,
+        y: y,
+        z: Math.sin(theta) * shaftR,
+        type: 'shaft',
+        size: 2.0
+      });
+      if (s > 0) edges.push([ringStart + s - 1, ringStart + s, 'subtle']);
+      if (s === segs - 1) edges.push([ringStart + s, ringStart, 'subtle']);
+      edges.push([ringStart + s - segs, ringStart + s, 'subtle']);
+    }
+  }
+
+  // Part C: Milling Flutes (Helical Cutting Edges - Tool Wear Zone)
+  const fluteTopY = shaftTopY + shaftH;
+  const fluteH = 160;
+  const fluteR = 44;
+  const fluteSteps = 24;
+  const numFlutes = 4;
+
+  for (let f = 0; f < numFlutes; f++) {
+    const fluteBaseAngle = (f / numFlutes) * Math.PI * 2;
+    let prevIdx = -1;
+    for (let i = 0; i <= fluteSteps; i++) {
+      const frac = i / fluteSteps;
+      const y = fluteTopY + frac * fluteH;
+      // Taper down slightly at the cutting tip
+      const rad = fluteR * (1.0 - 0.28 * Math.pow(frac, 2.5));
+      // Helical spiral twist
+      const theta = fluteBaseAngle + frac * Math.PI * 1.8;
+      const idx = nodes.length;
+      nodes.push({
+        x: Math.cos(theta) * rad,
+        y: y,
+        z: Math.sin(theta) * rad,
+        type: 'flute',
+        fluteId: f,
+        size: 2.4
+      });
+      if (prevIdx !== -1) {
+        edges.push([prevIdx, idx, 'flute']);
+      }
+      prevIdx = idx;
+    }
+  }
+
+  // Part D: Cutting End Tip (Pointed apex)
+  const tipApexIdx = nodes.length;
+  nodes.push({
+    x: 0,
+    y: fluteTopY + fluteH + 28,
+    z: 0,
+    type: 'tip',
+    size: 3.2
+  });
+  // Connect flute bottoms to tip
+  for (let f = 0; f < numFlutes; f++) {
+    const fluteEndIdx = tipApexIdx - 1 - (numFlutes - 1 - f) * (fluteSteps + 1);
+    edges.push([fluteEndIdx, tipApexIdx, 'flute']);
+  }
+
+  // Part E: Floating Ambient Telemetry Nodes
+  const ambientNodes = [];
+  for (let i = 0; i < 40; i++) {
+    ambientNodes.push({
+      x: (Math.random() - 0.5) * 600,
+      y: (Math.random() - 0.5) * 650,
+      z: (Math.random() - 0.5) * 500,
+      vx: (Math.random() - 0.5) * 0.25,
+      vy: (Math.random() - 0.5) * 0.25,
+      vz: (Math.random() - 0.5) * 0.25,
+      size: Math.random() * 2 + 1.2
+    });
+  }
+
+  // Part F: 3D Orbital Rings
+  const orbits = [
+    { radX: 240, radZ: 210, y: -90, tilt: 0.32, speed: 0.008, angle: 0, dotSize: 4.5, label: "HDF Temp Dissipation" },
+    { radX: 310, radZ: 270, y: 30,  tilt: -0.28, speed: -0.006, angle: 2.1, dotSize: 5.0, label: "PWF Mechanical Power" },
+    { radX: 380, radZ: 330, y: 150, tilt: 0.18, speed: 0.005, angle: 4.2, dotSize: 6.0, label: "TWF Wear Strain" }
+  ];
+
+  // -------------------------------------------------------------
+  // 3D PROJECTION HELPERS
+  // -------------------------------------------------------------
+  function project(p, cx, cy, rotY, tiltX, tiltZ) {
+    // 1. Rotate around Y axis (Spindle spin)
+    const cosY = Math.cos(rotY), sinY = Math.sin(rotY);
+    let x1 = p.x * cosY + p.z * sinY;
+    let y1 = p.y;
+    let z1 = -p.x * sinY + p.z * cosY;
+
+    // 2. Pitch (X axis tilt)
+    const cosX = Math.cos(tiltX), sinX = Math.sin(tiltX);
+    let y2 = y1 * cosX - z1 * sinX;
+    let z2 = y1 * sinX + z1 * cosX;
+    let x2 = x1;
+
+    // 3. Perspective projection
+    const fov = 750;
+    const distance = 800;
+    const scale = fov / (distance + z2);
+
+    return {
+      x: cx + x2 * scale,
+      y: cy + y2 * scale,
+      scale: scale,
+      depth: z2
+    };
+  }
+
+  // -------------------------------------------------------------
+  // ANIMATION LOOP
+  // -------------------------------------------------------------
+  function animate() {
+    ctx.clearRect(0, 0, width, height);
+
+    // Smooth tilt interpolation towards mouse
+    curTiltX += (targetTiltX - curTiltX) * 0.05;
+    curTiltY += (targetTiltY - curTiltY) * 0.05;
+    rotAngle += 0.008; // Continuous spindle rotation
+
+    // Center position: slightly to the right of center or centered
+    const cx = width * 0.52;
+    const cy = height * 0.48;
+
+    // Laser scan animation
+    scanY += 0.006 * scanDir;
+    if (scanY > 1) { scanY = 1; scanDir = -1; }
+    if (scanY < -1) { scanY = -1; scanDir = 1; }
+
+    // Project ambient drifting nodes
+    ambientNodes.forEach(pt => {
+      pt.x += pt.vx; pt.y += pt.vy; pt.z += pt.vz;
+      if (Math.abs(pt.x) > 350) pt.vx *= -1;
+      if (Math.abs(pt.y) > 380) pt.vy *= -1;
+      if (Math.abs(pt.z) > 300) pt.vz *= -1;
+
+      const pr = project(pt, cx, cy, rotAngle * 0.2, curTiltX, 0);
+      const alpha = Math.max(0.08, Math.min(0.35, (pr.depth + 300) / 600));
+      ctx.fillStyle = `rgba(107, 100, 92, ${alpha * 0.6})`;
+      ctx.beginPath();
+      ctx.arc(pr.x, pr.y, pt.size * pr.scale * 0.8, 0, Math.PI * 2);
+      ctx.fill();
+    });
+
+    // 1. Draw 3D Orbital Rings & Telemetry Dots
+    orbits.forEach(orb => {
+      orb.angle += orb.speed;
+      const pts = [];
+      const ringSteps = 60;
+      for (let i = 0; i <= ringSteps; i++) {
+        const theta = (i / ringSteps) * Math.PI * 2;
+        // Point on ellipse
+        const px = Math.cos(theta) * orb.radX;
+        const pz = Math.sin(theta) * orb.radZ;
+        // Tilt ring
+        const py = orb.y + px * Math.sin(orb.tilt);
+        pts.push(project({ x: px, y: py, z: pz }, cx, cy, rotAngle * 0.35, curTiltX, 0));
+      }
+
+      // Draw faint orbital ring track
+      ctx.strokeStyle = 'rgba(213, 206, 191, 0.45)';
+      ctx.lineWidth = 1.0;
+      ctx.setLineDash([4, 4]);
+      ctx.beginPath();
+      pts.forEach((p, idx) => {
+        if (idx === 0) ctx.moveTo(p.x, p.y);
+        else ctx.lineTo(p.x, p.y);
+      });
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      // Draw orbiting beacon node
+      const bX = Math.cos(orb.angle) * orb.radX;
+      const bZ = Math.sin(orb.angle) * orb.radZ;
+      const bY = orb.y + bX * Math.sin(orb.tilt);
+      const bProj = project({ x: bX, y: bY, z: bZ }, cx, cy, rotAngle * 0.35, curTiltX, 0);
+
+      // Outer beacon glow
+      const grad = ctx.createRadialGradient(bProj.x, bProj.y, 0, bProj.x, bProj.y, 14 * bProj.scale);
+      grad.addColorStop(0, 'rgba(232, 89, 12, 0.35)');
+      grad.addColorStop(1, 'rgba(232, 89, 12, 0)');
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.arc(bProj.x, bProj.y, 14 * bProj.scale, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Core solid dot
+      ctx.fillStyle = '#2B2723';
+      ctx.beginPath();
+      ctx.arc(bProj.x, bProj.y, orb.dotSize * bProj.scale * 0.8, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Tiny inner orange spark
+      ctx.fillStyle = '#E8590C';
+      ctx.beginPath();
+      ctx.arc(bProj.x, bProj.y, 2.0 * bProj.scale, 0, Math.PI * 2);
+      ctx.fill();
+    });
+
+    // 2. Project Spindle Nodes
+    const projNodes = nodes.map(n => project(n, cx, cy, rotAngle, curTiltX, 0));
+
+    // 3. Draw Wireframe Edges
+    edges.forEach(([i1, i2, style]) => {
+      const p1 = projNodes[i1];
+      const p2 = projNodes[i2];
+      const avgDepth = (p1.depth + p2.depth) * 0.5;
+      const depthAlpha = Math.max(0.08, Math.min(0.55, (avgDepth + 200) / 400));
+
+      ctx.beginPath();
+      ctx.moveTo(p1.x, p1.y);
+      ctx.lineTo(p2.x, p2.y);
+
+      if (style === 'flute') {
+        // Cutting edge flutes in distinctive burnt orange
+        ctx.strokeStyle = `rgba(232, 89, 12, ${depthAlpha * 0.75})`;
+        ctx.lineWidth = 1.3 * p1.scale;
+      } else {
+        // Structural mesh in subtle slate/charcoal
+        ctx.strokeStyle = `rgba(107, 100, 92, ${depthAlpha * 0.32})`;
+        ctx.lineWidth = 0.85 * p1.scale;
+      }
+      ctx.stroke();
+    });
+
+    // 4. Draw Nodes / Vertices
+    projNodes.forEach((p, idx) => {
+      const orig = nodes[idx];
+      const depthAlpha = Math.max(0.12, Math.min(0.85, (p.depth + 200) / 400));
+
+      if (orig.type === 'flute' || orig.type === 'tip') {
+        ctx.fillStyle = `rgba(232, 89, 12, ${depthAlpha})`;
+      } else {
+        ctx.fillStyle = `rgba(43, 39, 35, ${depthAlpha * 0.65})`;
+      }
+
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, orig.size * p.scale * 0.75, 0, Math.PI * 2);
+      ctx.fill();
+    });
+
+    // 5. Sweeping Laser Telemetry Scan Line
+    const scanWorldY = scanY * 220 + 20;
+    const scanLeft = project({ x: -280, y: scanWorldY, z: 0 }, cx, cy, rotAngle * 0.2, curTiltX, 0);
+    const scanRight = project({ x: 280, y: scanWorldY, z: 0 }, cx, cy, rotAngle * 0.2, curTiltX, 0);
+
+    const laserGrad = ctx.createLinearGradient(scanLeft.x, scanLeft.y, scanRight.x, scanRight.y);
+    laserGrad.addColorStop(0, 'rgba(232, 89, 12, 0)');
+    laserGrad.addColorStop(0.2, 'rgba(232, 89, 12, 0.25)');
+    laserGrad.addColorStop(0.5, 'rgba(232, 89, 12, 0.55)');
+    laserGrad.addColorStop(0.8, 'rgba(232, 89, 12, 0.25)');
+    laserGrad.addColorStop(1, 'rgba(232, 89, 12, 0)');
+
+    ctx.strokeStyle = laserGrad;
+    ctx.lineWidth = 1.6;
+    ctx.beginPath();
+    ctx.moveTo(scanLeft.x, scanLeft.y);
+    ctx.lineTo(scanRight.x, scanRight.y);
+    ctx.stroke();
+
+    requestAnimationFrame(animate);
+  }
+
+  requestAnimationFrame(animate);
+})();
+</script>
+</body>
+</html>

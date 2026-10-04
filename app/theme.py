@@ -213,8 +213,13 @@ html, body, [class*="css"], .stApp {{
 }}
 
 /* App Container & Background */
-.stApp, [data-testid="stAppViewContainer"], .main {{
+.stApp {{
     background-color: var(--pg-bg) !important;
+    color: var(--pg-text) !important;
+}}
+
+[data-testid="stAppViewContainer"], .main {{
+    background-color: transparent !important;
     color: var(--pg-text) !important;
 }}
 
@@ -227,9 +232,48 @@ html, body, [class*="css"], .stApp {{
 }}
 
 .main .block-container {{
+    position: relative !important;
+    z-index: 2 !important;
     padding-top: 1.0rem !important;
     padding-bottom: 1.2rem !important;
     max-width: 98% !important;
+}}
+
+/* 3D Digital Twin Background Canvas */
+#pg-digital-twin-canvas {{
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    z-index: 0 !important;
+    pointer-events: none !important;
+    display: block !important;
+}}
+
+.st-key-pg_3d_bg {{
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 0 !important;
+    height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: hidden !important;
+    pointer-events: none !important;
+    z-index: 0 !important;
+}}
+
+.st-key-pg_3d_bg iframe {{
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    border: none !important;
+    pointer-events: none !important;
+    background: transparent !important;
+    z-index: 0 !important;
 }}
 
 /* Sidebar */
