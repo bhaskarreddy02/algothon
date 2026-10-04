@@ -46,6 +46,15 @@ LIGHT: Dict[str, str] = {
     "grid": "#EAE5DC",
     "shadow_sm": "0 1px 2px rgba(28, 25, 23, 0.04)",
     "shadow_md": "0 4px 6px -1px rgba(28, 25, 23, 0.06), 0 2px 4px -2px rgba(28, 25, 23, 0.04)",
+    "seg_track_bg": "#EFEBE4",
+    "seg_track_border": "#E2DCD2",
+    "seg_unselected_text": "#6B655C",
+    "seg_hover_bg": "#E7E1D7",
+    "seg_hover_text": "#2B2723",
+    "seg_selected_bg": "#FFFFFF",
+    "seg_selected_text": "#E8590C",
+    "seg_selected_border": "#E8754A",
+    "seg_selected_shadow": "0 1px 3px rgba(43, 39, 35, 0.08)",
 }
 
 DARK: Dict[str, str] = {
@@ -83,6 +92,15 @@ DARK: Dict[str, str] = {
     "grid": "#262626",
     "shadow_sm": "0 1px 2px rgba(0, 0, 0, 0.4)",
     "shadow_md": "0 4px 6px -1px rgba(0, 0, 0, 0.5), 0 2px 4px -2px rgba(0, 0, 0, 0.4)",
+    "seg_track_bg": "#1C1C1C",
+    "seg_track_border": "#2E2E2E",
+    "seg_unselected_text": "#A39E96",
+    "seg_hover_bg": "#252525",
+    "seg_hover_text": "#F2EFEA",
+    "seg_selected_bg": "#222222",
+    "seg_selected_text": "#FF8A3D",
+    "seg_selected_border": "#FF8A3D",
+    "seg_selected_shadow": "0 1px 3px rgba(0, 0, 0, 0.3)",
 }
 
 
@@ -204,8 +222,14 @@ html, body, [class*="css"], .stApp {{
     background-color: transparent !important;
 }}
 
-#MainMenu, footer, .stDeployButton {{
+#MainMenu, footer, .stDeployButton, [data-testid="stToolbar"], header[data-testid="stHeader"] .stDeployButton {{
     display: none !important;
+}}
+
+.main .block-container {{
+    padding-top: 1.0rem !important;
+    padding-bottom: 1.2rem !important;
+    max-width: 98% !important;
 }}
 
 /* Sidebar */
@@ -277,6 +301,32 @@ input, textarea, [data-baseweb="input"] {{
     box-shadow: 0 0 0 1px var(--pg-input-focus) !important;
 }}
 
+/* Click-to-type number box styling */
+[data-testid="stNumberInput"] button {{
+    display: none !important;
+}}
+[data-testid="stNumberInput"] input::-webkit-outer-spin-button,
+[data-testid="stNumberInput"] input::-webkit-inner-spin-button {{
+    -webkit-appearance: none !important;
+    margin: 0 !important;
+}}
+[data-testid="stNumberInput"] input[type=number] {{
+    -moz-appearance: textfield !important;
+}}
+[data-testid="stNumberInput"] input {{
+    text-align: center !important;
+    font-variant-numeric: tabular-nums !important;
+    font-weight: 700 !important;
+    font-size: 1.02rem !important;
+    height: 36px !important;
+    padding: 2px 4px !important;
+    border-radius: 6px !important;
+}}
+[data-testid="stNumberInput"] {{
+    width: 100% !important;
+    margin-bottom: 0px !important;
+}}
+
 /* Selectbox & Dropdowns */
 [data-baseweb="select"] > div {{
     background-color: var(--pg-input-bg) !important;
@@ -298,6 +348,141 @@ input, textarea, [data-baseweb="input"] {{
 
 [data-baseweb="menu"] li:hover {{
     background-color: var(--pg-surface-subtle) !important;
+}}
+
+/* Segmented Control & Button Group (Option 1: Soft Pill) */
+[data-testid="stButtonGroup"],
+.st-key-top_nav,
+.st-key-seg_machine_type {{
+    background: transparent !important;
+}}
+
+[data-testid="stButtonGroup"] > div,
+[data-testid="stButtonGroup"] [role="radiogroup"],
+[data-testid="stButtonGroup"] div:has(> button),
+.st-key-top_nav > div,
+.st-key-seg_machine_type > div {{
+    background-color: {t['seg_track_bg']} !important;
+    border: 1px solid {t['seg_track_border']} !important;
+    border-radius: 8px !important;
+    padding: 3px !important;
+    gap: 3px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+}}
+
+[data-testid="stButtonGroup"] button,
+button[data-variant="segmented_control"],
+button[kind="segmented_control"],
+[data-testid="stButtonGroup"] [role="radiogroup"] button {{
+    background-color: transparent !important;
+    background: transparent !important;
+    color: {t['seg_unselected_text']} !important;
+    border: 1px solid transparent !important;
+    border-radius: 6px !important;
+    font-weight: 500 !important;
+    font-size: 0.84rem !important;
+    padding: 5px 14px !important;
+    box-shadow: none !important;
+    transition: all 0.15s ease-in-out !important;
+}}
+
+[data-testid="stButtonGroup"] button p,
+[data-testid="stButtonGroup"] button span,
+[data-testid="stButtonGroup"] button div,
+button[data-variant="segmented_control"] p,
+button[data-variant="segmented_control"] span,
+button[data-variant="segmented_control"] div,
+button[kind="segmented_control"] p,
+button[kind="segmented_control"] span {{
+    color: {t['seg_unselected_text']} !important;
+    font-weight: 500 !important;
+}}
+
+[data-testid="stButtonGroup"] button:hover,
+button[data-variant="segmented_control"]:hover,
+button[kind="segmented_control"]:hover,
+[data-testid="stButtonGroup"] button[data-hovered="true"],
+[data-testid="stButtonGroup"] [role="radiogroup"] button:hover {{
+    background-color: {t['seg_hover_bg']} !important;
+    background: {t['seg_hover_bg']} !important;
+    color: {t['seg_hover_text']} !important;
+    border-color: transparent !important;
+}}
+
+[data-testid="stButtonGroup"] button:hover p,
+[data-testid="stButtonGroup"] button:hover span,
+[data-testid="stButtonGroup"] button:hover div,
+button[data-variant="segmented_control"]:hover p,
+button[data-variant="segmented_control"]:hover span,
+button[kind="segmented_control"]:hover p,
+button[kind="segmented_control"]:hover span {{
+    color: {t['seg_hover_text']} !important;
+    font-weight: 500 !important;
+}}
+
+[data-testid="stButtonGroup"] button[data-selected="true"],
+[data-testid="stButtonGroup"] button[data-selected],
+[data-testid="stButtonGroup"] button[aria-checked="true"],
+[data-testid="stButtonGroup"] button[aria-pressed="true"],
+button[data-variant="segmented_control"][data-selected],
+button[data-variant="segmented_control"][data-selected="true"],
+button[kind="segmented_controlActive"] {{
+    background-color: {t['seg_selected_bg']} !important;
+    background: {t['seg_selected_bg']} !important;
+    color: {t['seg_selected_text']} !important;
+    border: 1px solid {t['seg_selected_border']} !important;
+    border-radius: 6px !important;
+    box-shadow: {t['seg_selected_shadow']} !important;
+    font-weight: 600 !important;
+}}
+
+[data-testid="stButtonGroup"] button[data-selected="true"] p,
+[data-testid="stButtonGroup"] button[data-selected="true"] span,
+[data-testid="stButtonGroup"] button[data-selected="true"] div,
+[data-testid="stButtonGroup"] button[data-selected] p,
+[data-testid="stButtonGroup"] button[data-selected] span,
+[data-testid="stButtonGroup"] button[data-selected] div,
+[data-testid="stButtonGroup"] button[aria-checked="true"] p,
+[data-testid="stButtonGroup"] button[aria-checked="true"] span,
+[data-testid="stButtonGroup"] button[aria-pressed="true"] p,
+[data-testid="stButtonGroup"] button[aria-pressed="true"] span,
+button[data-variant="segmented_control"][data-selected] p,
+button[data-variant="segmented_control"][data-selected] span,
+button[data-variant="segmented_control"][data-selected="true"] p,
+button[data-variant="segmented_control"][data-selected="true"] span,
+button[kind="segmented_controlActive"] p,
+button[kind="segmented_controlActive"] span {{
+    color: {t['seg_selected_text']} !important;
+    font-weight: 600 !important;
+}}
+
+/* Scenario Presets Bar */
+.scenario-bar .stButton > button {{
+    background-color: var(--pg-surface) !important;
+    color: var(--pg-text) !important;
+    border: 1px solid var(--pg-border-strong) !important;
+    border-radius: 6px !important;
+    font-weight: 500 !important;
+    font-size: 0.84rem !important;
+    padding: 0.45rem 0.8rem !important;
+    box-shadow: var(--pg-shadow-sm) !important;
+    transition: all 0.15s ease-in-out !important;
+}}
+
+.scenario-bar .stButton > button:hover {{
+    background-color: var(--pg-surface-subtle) !important;
+    border-color: var(--pg-accent) !important;
+    color: var(--pg-text) !important;
+}}
+
+.scenario-bar .stButton > button[kind="primary"],
+.scenario-bar .stButton > button[data-testid="stBaseButton-primary"] {{
+    background-color: #FFFFFF !important;
+    color: var(--pg-accent) !important;
+    border: 1.5px solid var(--pg-accent) !important;
+    box-shadow: 0 1px 3px rgba(43, 39, 35, 0.08) !important;
+    font-weight: 600 !important;
 }}
 
 /* Buttons */
@@ -578,6 +763,233 @@ div[data-testid="stSegmentedControl"] button[aria-checked="true"] {{
 }}
 ::-webkit-scrollbar-thumb:hover {{
     background: var(--pg-muted);
+}}
+
+/* Live Dashboard Sensor Card & Controls */
+.sensor-panel-card {{
+    background-color: var(--pg-surface);
+    border: 1px solid var(--pg-border);
+    border-radius: 10px;
+    padding: 16px 20px;
+    box-shadow: var(--pg-shadow-sm);
+    margin-bottom: 12px;
+}}
+
+.machine-type-row {{
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--pg-border-subtle);
+}}
+
+.machine-type-title {{
+    font-size: 0.92rem;
+    font-weight: 600;
+    color: var(--pg-text);
+}}
+
+.sensor-header-row {{
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2px;
+}}
+
+.sensor-label {{
+    font-size: 0.90rem;
+    font-weight: 600;
+    color: var(--pg-text);
+}}
+
+.sensor-unit {{
+    font-size: 0.82rem;
+    font-weight: 500;
+    color: var(--pg-muted);
+    display: inline-flex;
+    align-items: center;
+    margin-left: 2px;
+}}
+
+.sub-slider-row {{
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.72rem;
+    color: var(--pg-muted);
+    margin-top: -6px;
+    margin-bottom: 4px;
+    font-variant-numeric: tabular-nums;
+}}
+
+.sub-slider-end {{
+    font-weight: 600;
+    color: var(--pg-muted);
+}}
+
+.sub-slider-amber {{
+    color: var(--pg-warning) !important;
+    font-weight: 700 !important;
+}}
+
+.sub-slider-typ {{
+    color: var(--pg-faint);
+    font-size: 0.70rem;
+}}
+
+.sensor-warning {{
+    font-size: 0.70rem;
+    color: var(--pg-warning);
+    background-color: var(--pg-warning-subtle);
+    border: 1px solid var(--pg-warning-border);
+    border-radius: 4px;
+    padding: 2px 6px;
+    margin-top: -2px;
+    margin-bottom: 6px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}}
+
+.sensor-notice {{
+    font-size: 0.70rem;
+    color: var(--pg-muted);
+    margin-top: -2px;
+    margin-bottom: 6px;
+    font-style: italic;
+}}
+
+.sensor-error {{
+    font-size: 0.70rem;
+    color: var(--pg-danger);
+    background-color: var(--pg-danger-subtle);
+    border: 1px solid var(--pg-danger-border);
+    border-radius: 4px;
+    padding: 2px 6px;
+    margin-top: -2px;
+    margin-bottom: 6px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}}
+
+/* 3 Compact Derived Physics Cards */
+.stat-cards-grid {{
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 10px;
+    margin-top: 14px;
+    margin-bottom: 8px;
+}}
+
+.stat-card {{
+    background-color: var(--pg-surface-subtle);
+    border: 1px solid var(--pg-border);
+    border-radius: 6px;
+    padding: 10px 14px;
+}}
+
+.stat-card-title {{
+    font-size: 0.74rem;
+    font-weight: 600;
+    color: var(--pg-muted);
+    margin-bottom: 2px;
+}}
+
+.stat-card-val {{
+    font-size: 1.35rem;
+    font-weight: 800;
+    color: var(--pg-text);
+    font-variant-numeric: tabular-nums;
+    line-height: 1.2;
+}}
+
+/* Scenario preset buttons */
+.scenario-bar {{
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 12px;
+}}
+
+.scenario-label {{
+    font-size: 0.76rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--pg-muted);
+    margin-right: 4px;
+}}
+
+/* Right Panel Risk Gauge */
+.risk-gauge-container {{
+    background-color: var(--pg-surface);
+    border: 1px solid var(--pg-border);
+    border-radius: 8px;
+    padding: 16px 18px;
+    box-shadow: var(--pg-shadow-sm);
+    margin-bottom: 10px;
+}}
+
+.risk-header-row {{
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 4px;
+}}
+
+.risk-header-title {{
+    font-size: 0.74rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--pg-muted);
+}}
+
+.risk-big-val {{
+    font-size: 2.6rem;
+    font-weight: 800;
+    line-height: 1.1;
+    margin: 4px 0 2px;
+    font-variant-numeric: tabular-nums;
+}}
+
+.risk-thresh-caption {{
+    font-size: 0.76rem;
+    color: var(--pg-muted);
+    margin-bottom: 10px;
+}}
+
+.risk-bar-track {{
+    position: relative;
+    height: 8px;
+    width: 100%;
+    background-color: var(--pg-border-subtle);
+    border-radius: 4px;
+    margin-bottom: 6px;
+}}
+
+.risk-bar-fill {{
+    height: 100%;
+    border-radius: 4px;
+    transition: width 0.15s ease;
+}}
+
+.risk-bar-marker {{
+    position: absolute;
+    top: -4px;
+    bottom: -4px;
+    width: 2px;
+    background-color: var(--pg-text);
+    z-index: 2;
+}}
+
+.risk-bar-scale {{
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.68rem;
+    color: var(--pg-faint);
 }}
 </style>
 """

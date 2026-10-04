@@ -33,7 +33,10 @@ from src.config import (
 from src.predict import predict_records, load_threshold_configuration, prepare_inference_features
 from src.explain import get_pipeline_feature_names, explain_sample_human_readable
 from app.theme import apply_theme, get_theme
-from app.components import page_header, chip_html, compact_physics_card, result_verdict_card, icon_html
+from app.components import (
+    page_header, chip_html, compact_physics_card, result_verdict_card, icon_html,
+    render_sensor_control, render_stat_cards, render_risk_gauge_card, render_decision_support,
+)
 
 # ---------------------------------------------------------------------------
 # PAGE CONFIG
@@ -130,18 +133,239 @@ def risk_card_html(prob: float, threshold: float) -> str:
     )
 
 
-def compute_physics(air_temp, proc_temp, speed, torque, wear, machine_type):
-    td  = proc_temp - air_temp
-    pw  = torque * speed * (2.0 * 3.14159265358979 / 60.0)
-    wt  = wear * torque
+SENSOR_CONFIG = {
+    "air_temp": {
+        "label": "Air Temperature",
+        "unit": "K",
+        "ds_min": 295.3,
+        "ds_max": 304.5,
+        "typ_min": 299.0,
+        "typ_max": 302.0,
+        "default": 298.1,
+        "step": 0.1,
+        "fmt": "%.1f",
+    },
+    "proc_temp": {
+        "label": "Process Temperature",
+        "unit": "K",
+        "ds_min": 305.7,
+        "ds_max": 313.8,
+        "typ_min": 308.0,
+        "typ_max": 311.0,
+        "default": 308.6,
+        "step": 0.1,
+        "fmt": "%.1f",
+    },
+    "speed": {
+        "label": "Rotational Speed",
+        "unit": "rpm",
+        "ds_min": 1168.0,
+        "ds_max": 2886.0,
+        "typ_min": 1400.0,
+        "typ_max": 1700.0,
+        "default": 1551.0,
+        "step": 1.0,
+        "fmt": "%d",
+    },
+    "torque": {
+        "label": "Torque",
+        "unit": "Nm",
+        "ds_min": 3.8,
+        "ds_max": 76.6,
+        "typ_min": 30.0,
+        "typ_max": 50.0,
+        "default": 42.8,
+        "step": 0.1,
+        "fmt": "%.1f",
+    },
+    "wear": {
+        "label": "Tool Wear",
+        "unit": "min",
+        "ds_min": 0.0,
+        "ds_max": 253.0,
+        "typ_min": 0.0,
+        "typ_max": 150.0,
+        "default": 0.0,
+        "step": 1.0,
+        "fmt": "%d",
+    },
+}
+
+PRESETS = {
+    "Normal": {
+        "type": "L",
+        "air_temp": 298.1,
+        "proc_temp": 308.6,
+        "speed": 1551.0,
+        "torque": 42.8,
+        "wear": 0.0,
+    },
+    "Overheat (HDF)": {
+        "type": "L",
+        "air_temp": 298.8,
+        "proc_temp": 306.9,
+        "speed": 1360.0,
+        "torque": 52.0,
+        "wear": 45.0,
+    },
+    "Tool Wear (TWF)": {
+        "type": "M",
+        "air_temp": 298.2,
+        "proc_temp": 308.7,
+        "speed": 1480.0,
+        "torque": 45.0,
+        "wear": 225.0,
+    },
+    "Power Failure (PWF)": {
+        "type": "H",
+        "air_temp": 299.0,
+        "proc_temp": 309.5,
+        "speed": 2850.0,
+        "torque": 68.0,
+        "wear": 30.0,
+    },
+}
+
+
+def init_sensor_state():
+    if "machine_type" not in st.session_state:
+        st.session_state["machine_type"] = "L"
+    for k, cfg in SENSOR_CONFIG.items():
+        if f"val_{k}" not in st.session_state:
+            st.session_state[f"val_{k}"] = cfg["default"]
+        if f"num_{k}" not in st.session_state:
+            st.session_state[f"num_{k}"] = cfg["default"]
+        if f"slider_{k}" not in st.session_state:
+            st.session_state[f"slider_{k}"] = cfg["default"]
+        if f"min_{k}" not in st.session_state:
+            st.session_state[f"min_{k}"] = cfg["ds_min"]
+        if f"max_{k}" not in st.session_state:
+            st.session_state[f"max_{k}"] = cfg["ds_max"]
+        if f"err_{k}" not in st.session_state:
+            st.session_state[f"err_{k}"] = None
+
+
+def on_slider_change(key: str):
+    new_v = st.session_state[f"slider_{key}"]
+    st.session_state[f"val_{key}"] = new_v
+    st.session_state[f"num_{key}"] = new_v
+    st.session_state[f"err_{key}"] = None
+    st.session_state["active_preset"] = None
+
+
+def on_number_change(key: str):
+    new_v = st.session_state[f"num_{key}"]
+    cfg = SENSOR_CONFIG[key]
+    if new_v < 0:
+        st.session_state[f"err_{key}"] = "Physical value cannot be negative."
+        return
+    st.session_state[f"err_{key}"] = None
+    st.session_state[f"val_{key}"] = new_v
+    if new_v < st.session_state[f"min_{key}"]:
+        st.session_state[f"min_{key}"] = float(new_v)
+    if new_v > st.session_state[f"max_{key}"]:
+        st.session_state[f"max_{key}"] = float(new_v)
+    st.session_state[f"slider_{key}"] = new_v
+    st.session_state["active_preset"] = None
+
+
+def apply_preset(name: str):
+    preset = PRESETS[name]
+    st.session_state["machine_type"] = preset["type"]
+    st.session_state["active_preset"] = name
+    for k, cfg in SENSOR_CONFIG.items():
+        v = preset[k]
+        st.session_state[f"val_{k}"] = v
+        st.session_state[f"num_{k}"] = v
+        st.session_state[f"slider_{k}"] = v
+        st.session_state[f"min_{k}"] = min(cfg["ds_min"], v)
+        st.session_state[f"max_{k}"] = max(cfg["ds_max"], v)
+        st.session_state[f"err_{k}"] = None
+
+
+def compute_all_physics(air_temp, proc_temp, speed, torque, wear, machine_type):
+    td = proc_temp - air_temp
+    pw = torque * speed * (2.0 * np.pi / 60.0)
+    wt = wear * torque
     cap = OSF_OVERSTRAIN_THRESHOLDS.get(machine_type, OSF_CONSERVATIVE_CAPACITY_FALLBACK)
+    p_below = max(0.0, PWF_LOWER_POWER_LIMIT - pw)
+    p_above = max(0.0, pw - PWF_UPPER_POWER_LIMIT)
+    p_dist = p_below + p_above
+    
+    temp_deficit = max(0.0, HDF_TEMP_DIFF_THRESHOLD - td)
+    speed_deficit = max(0.0, HDF_ROTATIONAL_SPEED_THRESHOLD - speed)
+    low_speed_low_tempdiff = temp_deficit * speed_deficit
+    
+    in_twf = TWF_MIN_WEAR <= wear <= TWF_MAX_WEAR
+    if wear < TWF_MIN_WEAR:
+        dist_to_band = TWF_MIN_WEAR - wear
+    elif wear > TWF_MAX_WEAR:
+        dist_to_band = wear - TWF_MAX_WEAR
+    else:
+        dist_to_band = 0.0
+    twf_proximity = float(np.exp(-dist_to_band / 20.0))
+    
+    speed_torque_ratio = speed / (torque + 1e-6)
+    temp_ratio = proc_temp / (air_temp + 1e-6)
+    
     return {
-        "temp_diff": td, "power_w": pw, "wear_torque": wt,
+        "temp_diff": td,
+        "power_w": pw,
+        "wear_torque": wt,
         "overstrain_ratio": wt / (cap + 1e-6),
-        "in_twf_band": TWF_MIN_WEAR <= wear <= TWF_MAX_WEAR,
+        "power_below_limit": p_below,
+        "power_above_limit": p_above,
+        "power_distance_to_safe_band": p_dist,
+        "low_speed_low_tempdiff": low_speed_low_tempdiff,
+        "tool_wear_in_critical_band": float(in_twf),
+        "tool_wear_critical_proximity": twf_proximity,
+        "speed_torque_ratio": speed_torque_ratio,
+        "temp_ratio": temp_ratio,
+        "in_twf_band": in_twf,
         "hdf_risk": td < HDF_TEMP_DIFF_THRESHOLD and speed < HDF_ROTATIONAL_SPEED_THRESHOLD,
         "pwf_risk": pw < PWF_LOWER_POWER_LIMIT or pw > PWF_UPPER_POWER_LIMIT,
     }
+
+
+def compute_physics(air_temp, proc_temp, speed, torque, wear, machine_type):
+    return compute_all_physics(air_temp, proc_temp, speed, torque, wear, machine_type)
+
+
+def shap_mini_bar_fig(shap_vals, feature_names, proc_arr, base_val, prob, top_n=5):
+    t = get_theme(st.session_state.get("theme_mode", "light"))
+    RED, GREEN = t["danger"], t["success"]
+    contribs = sorted(
+        [{"name": n, "val": float(v), "shap": float(s)}
+         for n, v, s in zip(feature_names, proc_arr, shap_vals)],
+        key=lambda x: abs(x["shap"]), reverse=True
+    )
+    top = contribs[:top_n][::-1]
+    fig, ax = plt.subplots(figsize=(6.2, 2.2), dpi=100)
+    fig.patch.set_facecolor(t["surface"])
+    ax.set_facecolor(t["surface"])
+    names = [c["name"] for c in top]
+    shaps_plot = [c["shap"] for c in top]
+    colors = [RED if s > 0 else GREEN for s in shaps_plot]
+    bars = ax.barh(names, shaps_plot, color=colors, edgecolor="none", height=0.52, alpha=0.92)
+    for bar, val in zip(bars, shaps_plot):
+        off = 0.02 if val >= 0 else -0.02
+        ha = "left" if val >= 0 else "right"
+        ax.text(val + off, bar.get_y() + bar.get_height() / 2,
+                f"{val:+.3f}", ha=ha, va="center",
+                fontsize=7.5, fontweight="600", color=t["text"], fontfamily="monospace")
+    ax.axvline(0, color=t["border_strong"], linewidth=1.0)
+    ax.tick_params(colors=t["text"], labelsize=8)
+    for sp in ["top", "right"]: ax.spines[sp].set_visible(False)
+    for sp in ["bottom", "left"]: ax.spines[sp].set_color(t["border"])
+    ax.xaxis.grid(True, color=t["grid"], linewidth=0.5, alpha=0.7)
+    ax.set_axisbelow(True)
+    ax.set_xlabel("SHAP impact on log-odds", color=t["muted"], fontsize=7.5)
+    ax.set_title(
+        f"Top Feature Drivers (TreeSHAP)  ·  Base: {base_val:+.2f}",
+        color=t["text"], fontsize=8.5, fontweight="600", pad=6, loc="left",
+    )
+    fig.tight_layout(pad=0.8)
+    return fig
 
 
 def shap_waterfall_fig(shap_vals, feature_names, proc_arr, base_val, prob, top_n=8):
@@ -156,13 +380,13 @@ def shap_waterfall_fig(shap_vals, feature_names, proc_arr, base_val, prob, top_n
     fig, ax = plt.subplots(figsize=(9, 4.8))
     fig.patch.set_facecolor(t["surface"])
     ax.set_facecolor(t["surface_subtle"])
-    names      = [c["name"]  for c in top]
-    shaps_plot = [c["shap"]  for c in top]
-    colors     = [RED if s > 0 else GREEN for s in shaps_plot]
+    names = [c["name"] for c in top]
+    shaps_plot = [c["shap"] for c in top]
+    colors = [RED if s > 0 else GREEN for s in shaps_plot]
     bars = ax.barh(names, shaps_plot, color=colors, edgecolor="none", height=0.55, alpha=0.92)
     for bar, val in zip(bars, shaps_plot):
         off = 0.03 if val >= 0 else -0.03
-        ha  = "left" if val >= 0 else "right"
+        ha = "left" if val >= 0 else "right"
         ax.text(val + off, bar.get_y() + bar.get_height() / 2,
                 f"{val:+.3f}", ha=ha, va="center",
                 fontsize=8.5, fontweight="600", color=t["text"], fontfamily="monospace")
@@ -199,7 +423,6 @@ def render_sidebar(thresh_cfg):
             unsafe_allow_html=True,
         )
 
-        # Light / Dark theme toggle at top of sidebar
         dark_active = st.toggle("Dark Theme", value=(st.session_state.get("theme_mode") == "dark"), key="theme_toggle")
         new_theme = "dark" if dark_active else "light"
         if new_theme != st.session_state.get("theme_mode"):
@@ -230,15 +453,6 @@ def render_sidebar(thresh_cfg):
             else float(thresh_cfg.get("high_recall_threshold", 0.50))
         )
         st.markdown('<hr style="border:none;border-top:1px solid var(--pg-sidebar-border);margin:14px 0;">', unsafe_allow_html=True)
-        st.markdown("**Navigation**")
-        page = st.radio(
-            "nav_page",
-            ["Live Inference", "Batch Prediction",
-             "Model Performance", "Explainability",
-             "Dataset Explorer", "System Info"],
-            label_visibility="collapsed",
-        )
-        st.markdown('<hr style="border:none;border-top:1px solid var(--pg-sidebar-border);margin:14px 0;">', unsafe_allow_html=True)
         st.markdown(
             '<div style="font-size: 0.74rem; color: var(--pg-muted); padding: 4px 0; line-height: 1.6;">'
             '<div><strong style="color: var(--pg-text);">Model:</strong> LightGBM + Isotonic</div>'
@@ -249,133 +463,160 @@ def render_sidebar(thresh_cfg):
             '</div>',
             unsafe_allow_html=True,
         )
-    return page, threshold_mode, active_thresh
+    return threshold_mode, active_thresh
 
 
 # ---------------------------------------------------------------------------
-# PAGE 1 -- LIVE INFERENCE
+# PAGE 1 -- LIVE INFERENCE DASHBOARD
 # ---------------------------------------------------------------------------
+@st.fragment
+def live_dashboard_fragment(pipeline, explainer, thresh_cfg, threshold_mode, active_thresh):
+    init_sensor_state()
+
+    # Preset selection bar
+    if "active_preset" not in st.session_state:
+        st.session_state["active_preset"] = "Normal"
+
+    st.markdown('<div class="scenario-bar" style="margin-bottom:8px;">', unsafe_allow_html=True)
+    p_cols = st.columns(4, gap="small")
+    preset_names = ["Normal", "Overheat (HDF)", "Tool Wear (TWF)", "Power Failure (PWF)"]
+    for idx, p_name in enumerate(preset_names):
+        with p_cols[idx]:
+            is_active = (st.session_state.get("active_preset") == p_name)
+            if st.button(p_name, key=f"btn_preset_{idx}", use_container_width=True, type="primary" if is_active else "secondary"):
+                apply_preset(p_name)
+                st.rerun(scope="fragment")
+    st.markdown('</div>', unsafe_allow_html=True)
+
+    col_inputs, col_results = st.columns([1.08, 0.92], gap="large")
+
+    with col_inputs:
+        st.markdown('<div class="section-header" style="margin-bottom:4px;"><span class="material-symbols-outlined icon-inline">tune</span><span class="section-title">Telemetry & Equipment Configuration</span></div>', unsafe_allow_html=True)
+        
+        # Machine Type Segmented Control
+        m_col1, m_col2 = st.columns([1.2, 2.0])
+        with m_col1:
+            st.markdown('<div style="font-size:0.75rem; font-weight:600; color:var(--pg-muted); text-transform:uppercase; padding-top:6px;">Machine Type</div>', unsafe_allow_html=True)
+        with m_col2:
+            sel_type = st.segmented_control(
+                "Machine Quality Grade",
+                options=["L", "M", "H"],
+                default=st.session_state["machine_type"],
+                key="seg_machine_type",
+                label_visibility="collapsed",
+            )
+            if sel_type and sel_type != st.session_state["machine_type"]:
+                st.session_state["machine_type"] = sel_type
+
+        machine_type = st.session_state["machine_type"]
+
+        # 5 Sensor Controls in 2-column layout
+        s_c1, s_c2 = st.columns(2, gap="medium")
+        with s_c1:
+            render_sensor_control("air_temp", SENSOR_CONFIG["air_temp"], on_slider_change, on_number_change)
+            render_sensor_control("speed", SENSOR_CONFIG["speed"], on_slider_change, on_number_change)
+        with s_c2:
+            render_sensor_control("proc_temp", SENSOR_CONFIG["proc_temp"], on_slider_change, on_number_change)
+            render_sensor_control("torque", SENSOR_CONFIG["torque"], on_slider_change, on_number_change)
+
+        render_sensor_control("wear", SENSOR_CONFIG["wear"], on_slider_change, on_number_change)
+
+        # Current sensor values
+        air_temp = float(st.session_state["val_air_temp"])
+        proc_temp = float(st.session_state["val_proc_temp"])
+        speed = float(st.session_state["val_speed"])
+        torque = float(st.session_state["val_torque"])
+        wear = float(st.session_state["val_wear"])
+
+        # Derived physics
+        phys = compute_all_physics(air_temp, proc_temp, speed, torque, wear, machine_type)
+
+        # 3 Prominent Stat Cards
+        render_stat_cards(phys)
+
+        # Collapsible Panel for 11 Physics Features
+        with st.expander("Physics-Informed Interaction Vector (11 features)", expanded=False):
+            phys_rows = [
+                {"Feature": "temp_diff", "Value": f"{phys['temp_diff']:.2f} K", "Physical Meaning": "Process - Air temperature difference"},
+                {"Feature": "power_w", "Value": f"{phys['power_w']:,.0f} W", "Physical Meaning": "Torque × speed mechanical power"},
+                {"Feature": "wear_torque", "Value": f"{phys['wear_torque']:,.0f} min·Nm", "Physical Meaning": "Cumulative strain load"},
+                {"Feature": "overstrain_ratio", "Value": f"{phys['overstrain_ratio']:.4f}", "Physical Meaning": f"Strain load / Variant {machine_type} capacity"},
+                {"Feature": "power_below_limit", "Value": f"{phys['power_below_limit']:,.0f} W", "Physical Meaning": "Deficit below 3,500 W lower stall boundary"},
+                {"Feature": "power_above_limit", "Value": f"{phys['power_above_limit']:,.0f} W", "Physical Meaning": "Excursion above 9,000 W overload boundary"},
+                {"Feature": "power_distance_to_safe_band", "Value": f"{phys['power_distance_to_safe_band']:,.0f} W", "Physical Meaning": "Total power distance outside safe envelope"},
+                {"Feature": "low_speed_low_tempdiff", "Value": f"{phys['low_speed_low_tempdiff']:,.1f}", "Physical Meaning": "Heat dissipation failure convective deficit"},
+                {"Feature": "tool_wear_in_critical_band", "Value": f"{int(phys['tool_wear_in_critical_band'])}", "Physical Meaning": "1 if wear in [200, 240] min critical zone"},
+                {"Feature": "tool_wear_critical_proximity", "Value": f"{phys['tool_wear_critical_proximity']:.4f}", "Physical Meaning": "Smooth exponential proximity to TWF band"},
+                {"Feature": "speed_torque_ratio", "Value": f"{phys['speed_torque_ratio']:.2f}", "Physical Meaning": "Rotational speed / torque impedance"},
+                {"Feature": "temp_ratio", "Value": f"{phys['temp_ratio']:.4f}", "Physical Meaning": "T_proc / T_air absolute thermodynamic ratio"},
+            ]
+            st.dataframe(pd.DataFrame(phys_rows), use_container_width=True, hide_index=True)
+
+    with col_results:
+        st.markdown('<div class="section-header" style="margin-bottom:4px;"><span class="material-symbols-outlined icon-inline">analytics</span><span class="section-title">Live Inference & Risk Analytics</span></div>', unsafe_allow_html=True)
+        
+        # Prepare inference record
+        input_record = {
+            "Type": machine_type,
+            "Air temperature [K]": air_temp,
+            "Process temperature [K]": proc_temp,
+            "Rotational speed [rpm]": speed,
+            "Torque [Nm]": torque,
+            "Tool wear [min]": wear,
+        }
+        
+        # Fast inference
+        result = predict_records(
+            df=pd.DataFrame([input_record]),
+            threshold_mode=threshold_mode if threshold_mode != "custom" else "optimal_f1",
+            custom_threshold=active_thresh if threshold_mode == "custom" else None,
+        )
+        prob = float(result["failure_probability"].iloc[0])
+
+        # 1. Risk Gauge Card
+        render_risk_gauge_card(prob, active_thresh, threshold_mode, thresh_cfg, phys)
+
+        # 2. Fast TreeSHAP attribution
+        prep = pipeline.named_steps["preprocessing"]
+        feature_names = get_pipeline_feature_names(pipeline)
+        clean_df, _ = prepare_inference_features(pd.DataFrame([input_record]))
+        proc_arr = prep.transform(clean_df)[0]
+        shap_res = explainer(pd.DataFrame([proc_arr], columns=feature_names))
+        sv = shap_res.values[0]
+        base_val = explainer.expected_value
+        if isinstance(base_val, (list, np.ndarray)):
+            base_val = float(base_val[1]) if len(base_val) > 1 else float(base_val[0])
+        else:
+            base_val = float(base_val)
+        human = explain_sample_human_readable(feature_names, proc_arr, sv, base_val, prob)
+
+        # 3. Compact SHAP Mini Bar Chart
+        fig_mini = shap_mini_bar_fig(sv, feature_names, proc_arr, base_val, prob, top_n=5)
+        st.pyplot(fig_mini, use_container_width=True)
+        plt.close(fig_mini)
+
+        # 4. Decision Support Recommendation Card
+        render_decision_support(human)
+
+        # 5. Full Feature Contribution Table (collapsed)
+        with st.expander("Full Feature Contribution Table (All Features)", expanded=False):
+            all_c = human.get("top_risk_drivers", []) + human.get("top_mitigating_factors", [])
+            if all_c:
+                rows = [{"Feature": d["feature"], "Value": f"{d['value']:.4f}",
+                         "SHAP (Log-Odds)": f"{d['shap_value']:+.4f}",
+                         "Direction": "+ Risk" if d["shap_value"] > 0 else "- Mitigating"}
+                        for d in sorted(all_c, key=lambda x: abs(x["shap_value"]), reverse=True)]
+                st.dataframe(pd.DataFrame(rows), use_container_width=True, hide_index=True)
+
+
 def page_live_inference(pipeline, explainer, thresh_cfg, threshold_mode, active_thresh):
     page_header(
         title="Real-Time Failure Prediction",
         description="Enter live sensor telemetry for an instant calibrated failure probability with SHAP explainability.",
-        badges=["Live Inference", "TreeSHAP", "Physics-Informed"],
+        badges=None,
         icon="precision_manufacturing"
     )
-    col_form, col_result = st.columns([1, 1], gap="large")
-    with col_form:
-        st.markdown('<div class="section-header"><span class="material-symbols-outlined icon-inline">tune</span><span class="section-title">Sensor Telemetry Input</span></div>',
-                    unsafe_allow_html=True)
-        machine_type = st.selectbox("Machine Type", ["L", "M", "H"],
-                                    help="L=Low / M=Medium / H=High quality grade")
-        air_temp  = st.number_input("Air Temperature [K]",    290.0, 320.0, 298.1, 0.1, "%.1f")
-        proc_temp = st.number_input("Process Temperature [K]", 300.0, 320.0, 308.6, 0.1, "%.1f")
-        speed     = st.number_input("Rotational Speed [rpm]",  1000,  3000,  1551,  1)
-        torque    = st.number_input("Torque [Nm]",              0.0,   80.0,  42.8,  0.1, "%.1f")
-        wear      = st.number_input("Tool Wear [min]",           0,    300,    0,     1)
-        predict_btn = st.button("Run Prediction", use_container_width=True, type="primary", icon=":material/bolt:")
-        phys = compute_physics(air_temp, proc_temp, speed, torque, wear, machine_type)
-        with st.expander("Derived Physics Features Preview", icon=":material/science:"):
-            p1, p2 = st.columns(2)
-            p1.metric("Temp Diff [K]", f"{phys['temp_diff']:.2f}",
-                      delta="HDF Risk" if phys["hdf_risk"] else "Normal",
-                      delta_color="inverse" if phys["hdf_risk"] else "normal")
-            p2.metric("Mechanical Power [W]", f"{phys['power_w']:,.0f}",
-                      delta="PWF Risk" if phys["pwf_risk"] else "Safe Band",
-                      delta_color="inverse" if phys["pwf_risk"] else "normal")
-            p3, p4 = st.columns(2)
-            p3.metric("Wear x Torque [min·Nm]", f"{phys['wear_torque']:,.0f}")
-            p4.metric("Overstrain Ratio", f"{phys['overstrain_ratio']:.4f}",
-                      delta="Over Limit (>1.0)" if phys["overstrain_ratio"] > 1.0 else "Safe",
-                      delta_color="inverse" if phys["overstrain_ratio"] > 1.0 else "normal")
-            st.markdown(
-                f"**TWF Status:** {chip_html('Critical wear zone [200-240 min]', 'warning') if phys['in_twf_band'] else chip_html('Outside TWF zone', 'success')}"
-            )
-    with col_result:
-        if predict_btn:
-            input_record = {
-                "Type": machine_type,
-                "Air temperature [K]": air_temp,
-                "Process temperature [K]": proc_temp,
-                "Rotational speed [rpm]": speed,
-                "Torque [Nm]": torque,
-                "Tool wear [min]": wear,
-            }
-            with st.spinner("Running inference pipeline..."):
-                result = predict_records(
-                    df=pd.DataFrame([input_record]),
-                    threshold_mode=threshold_mode if threshold_mode != "custom" else "optimal_f1",
-                    custom_threshold=active_thresh if threshold_mode == "custom" else None,
-                )
-                prob = float(result["failure_probability"].iloc[0])
-            st.markdown('<div class="section-header"><span class="material-symbols-outlined icon-inline">analytics</span><span class="section-title">Prediction Result</span></div>',
-                        unsafe_allow_html=True)
-            st.markdown(risk_card_html(prob, active_thresh), unsafe_allow_html=True)
-            mode_labels = {
-                "optimal_f1":  f"Max-F1 · OOF threshold {thresh_cfg.get('optimal_f1_threshold', 0.84):.4f}",
-                "high_recall": f"High-Recall · OOF threshold {thresh_cfg.get('high_recall_threshold', 0.50):.4f}",
-                "custom":       f"Custom override · {active_thresh:.4f}",
-            }
-            st.caption(f"Operating mode: **{mode_labels[threshold_mode]}**")
-            st.markdown('<div class="section-header"><span class="material-symbols-outlined icon-inline">troubleshoot</span><span class="section-title">SHAP Local Explanation</span></div>',
-                        unsafe_allow_html=True)
-            with st.spinner("Computing TreeSHAP (log-odds space)..."):
-                prep = pipeline.named_steps["preprocessing"]
-                feature_names = get_pipeline_feature_names(pipeline)
-                clean_df, _ = prepare_inference_features(pd.DataFrame([input_record]))
-                proc_arr = prep.transform(clean_df)[0]
-                shap_res = explainer(pd.DataFrame([proc_arr], columns=feature_names))
-                sv       = shap_res.values[0]
-                base_val = explainer.expected_value
-                if isinstance(base_val, (list, np.ndarray)):
-                    base_val = float(base_val[1]) if len(base_val) > 1 else float(base_val[0])
-                else:
-                    base_val = float(base_val)
-                human = explain_sample_human_readable(feature_names, proc_arr, sv, base_val, prob)
-            fig_wf = shap_waterfall_fig(sv, feature_names, proc_arr, base_val, prob)
-            st.pyplot(fig_wf, use_container_width=True)
-            plt.close(fig_wf)
-            action       = human.get("recommended_maintenance_action", "")
-            action_clean = action.split("(Decision Support): ")[-1] if "(Decision Support):" in action else action
-            action_type  = action.split(":")[0].split("(")[0].strip()
-            icon_map = {
-                "CRITICAL": icon_html("error_outline", "icon-danger"),
-                "WARNING": icon_html("warning_amber", "icon-warning"),
-                "ADVISORY": icon_html("info", "icon-accent"),
-                "NOMINAL": icon_html("check_circle", "icon-success"),
-            }
-            icon = icon_map.get(action_type, icon_html("info", "icon-muted"))
-            st.markdown(
-                f'<div class="pg-card" style="margin-top: 10px;">'
-                f'<div style="font-size:.75rem;font-weight:700;color:var(--pg-muted);letter-spacing:.06em;text-transform:uppercase;margin-bottom:8px;display:flex;align-items:center;gap:6px;">'
-                f'<span class="material-symbols-outlined icon-inline">build</span> <span>Decision Support Recommendation</span></div>'
-                f'<div style="font-size:.88rem;color:var(--pg-text);line-height:1.6;display:flex;align-items:flex-start;gap:8px;">'
-                f'<span>{icon}</span> <span><strong style="color:var(--pg-text);">{action_type}:</strong> {action_clean}</span></div>'
-                f'<div style="font-size:.72rem;color:var(--pg-muted);margin-top:8px;font-style:italic;">'
-                f'Decision support only. Operators retain full authority.</div>'
-                f'</div>',
-                unsafe_allow_html=True,
-            )
-            with st.expander("Full Feature Contribution Table", icon=":material/table_rows:"):
-                all_c = human.get("top_risk_drivers", []) + human.get("top_mitigating_factors", [])
-                if all_c:
-                    rows = [{"Feature": d["feature"], "Value": f"{d['value']:.4f}",
-                              "SHAP (Log-Odds)": f"{d['shap_value']:+.4f}",
-                              "Direction": "+ Risk" if d["shap_value"] > 0 else "- Mitigating"}
-                            for d in sorted(all_c, key=lambda x: abs(x["shap_value"]), reverse=True)]
-                    st.dataframe(pd.DataFrame(rows), use_container_width=True, hide_index=True)
-        else:
-            st.markdown(
-                '<div style="background-color:var(--pg-surface);border:1px dashed var(--pg-border-strong);'
-                'border-radius:8px;padding:64px 24px;text-align:center;color:var(--pg-muted);margin-top:24px;">'
-                '<div style="margin-bottom:12px;"><span class="material-symbols-outlined icon-lg icon-muted">precision_manufacturing</span></div>'
-                '<div style="font-size:.92rem;font-weight:600;color:var(--pg-text);">'
-                'Configure sensor telemetry on the left and click <b>Run Prediction</b>.</div>'
-                '<div style="font-size:.80rem;margin-top:8px;color:var(--pg-muted);line-height:1.6;">'
-                'Physics feature engineering &rarr; LightGBM &rarr; Isotonic calibration &rarr; TreeSHAP attribution.'
-                '</div></div>',
-                unsafe_allow_html=True,
-            )
+    live_dashboard_fragment(pipeline, explainer, thresh_cfg, threshold_mode, active_thresh)
 
 
 # ---------------------------------------------------------------------------
@@ -881,7 +1122,30 @@ def main():
     except Exception:
         df_train = pd.DataFrame()
     explainer = build_explainer(pipeline) if model_loaded else None
-    page, threshold_mode, active_thresh = render_sidebar(thresh_cfg)
+    threshold_mode, active_thresh = render_sidebar(thresh_cfg)
+
+    pages = [
+        "Live Inference",
+        "Batch Prediction",
+        "Model Performance",
+        "Explainability",
+        "Dataset Explorer",
+        "System Info",
+    ]
+    if "nav_page" not in st.session_state:
+        st.session_state["nav_page"] = "Live Inference"
+
+    page = st.segmented_control(
+        "Navigation",
+        pages,
+        default=st.session_state["nav_page"],
+        key="top_nav",
+        label_visibility="collapsed",
+    )
+    if not page:
+        page = st.session_state["nav_page"]
+    st.session_state["nav_page"] = page
+
     if "Live Inference" in page:
         if model_loaded:
             page_live_inference(pipeline, explainer, thresh_cfg, threshold_mode, active_thresh)
