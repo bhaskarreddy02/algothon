@@ -113,12 +113,8 @@ def get_theme(mode: str = "light") -> Dict[str, str]:
 # -----------------------------------------------------------------------------
 
 def get_css(t: Dict[str, str]) -> str:
-    """Generate comprehensive CSS variables and Streamlit overrides."""
-    return f"""
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=block">
-<style>
+    """Generate comprehensive CSS variables and Streamlit overrides without blank lines."""
+    raw = f"""
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap');
 
 .material-symbols-outlined {{
@@ -1058,8 +1054,9 @@ div[data-testid="stSegmentedControl"] button[aria-checked="true"] {{
     font-size: 0.68rem;
     color: var(--pg-faint);
 }}
-</style>
 """
+    clean_lines = [line.strip() for line in raw.splitlines() if line.strip()]
+    return "\n".join(clean_lines)
 
 
 def apply_theme(mode: str = "light") -> Dict[str, str]:
@@ -1068,7 +1065,14 @@ def apply_theme(mode: str = "light") -> Dict[str, str]:
     Returns the theme token dictionary for charts and custom HTML.
     """
     t = get_theme(mode)
-    st.markdown(get_css(t), unsafe_allow_html=True)
+    font_links = (
+        '<link rel="preconnect" href="https://fonts.googleapis.com">'
+        '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>'
+        '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=block">'
+    )
+    st.markdown(font_links, unsafe_allow_html=True)
+    css_content = get_css(t)
+    st.markdown(f"<style>\n{css_content}\n</style>", unsafe_allow_html=True)
 
     # Configure matplotlib globals
     plt.rcParams.update({
