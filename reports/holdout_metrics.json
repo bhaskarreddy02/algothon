@@ -1,0 +1,168 @@
+{
+    "dataset_split": "Holdout Test Set (20.0%, 2,000 samples)",
+    "sample_count": 2000,
+    "failure_count": 68,
+    "nominal_count": 1932,
+    "failure_prevalence_pct": 3.4000000000000004,
+    "headline_metrics": {
+        "pr_auc": 0.8988697806409189,
+        "roc_auc": 0.9830410425039581,
+        "brier_score": 0.00985745419532553
+    },
+    "threshold_evaluations": {
+        "default_0.50": {
+            "threshold_name": "Default (0.50)",
+            "threshold_value": 0.5,
+            "precision": 0.9193548387096774,
+            "recall": 0.8382352941176471,
+            "f1": 0.8769230769230769,
+            "mcc": 0.8737924780929186,
+            "specificity": 0.9974120082815735,
+            "balanced_accuracy": 0.9178236511996103,
+            "true_positives": 57,
+            "false_positives": 5,
+            "true_negatives": 1927,
+            "false_negatives": 11,
+            "confusion_matrix": [
+                [
+                    1927,
+                    5
+                ],
+                [
+                    11,
+                    57
+                ]
+            ],
+            "predicted_positive_rate": 0.031
+        },
+        "optimal_max_f1": {
+            "threshold_name": "Max-F1 (0.84)",
+            "threshold_value": 0.8415151515151514,
+            "precision": 0.9655172413793104,
+            "recall": 0.8235294117647058,
+            "f1": 0.8888888888888888,
+            "mcc": 0.888284859743029,
+            "specificity": 0.9989648033126294,
+            "balanced_accuracy": 0.9112471075386677,
+            "true_positives": 56,
+            "false_positives": 2,
+            "true_negatives": 1930,
+            "false_negatives": 12,
+            "confusion_matrix": [
+                [
+                    1930,
+                    2
+                ],
+                [
+                    12,
+                    56
+                ]
+            ],
+            "predicted_positive_rate": 0.029
+        },
+        "high_recall_safety": {
+            "threshold_name": "High-Recall (0.50)",
+            "threshold_value": 0.495050505050505,
+            "precision": 0.9193548387096774,
+            "recall": 0.8382352941176471,
+            "f1": 0.8769230769230769,
+            "mcc": 0.8737924780929186,
+            "specificity": 0.9974120082815735,
+            "balanced_accuracy": 0.9178236511996103,
+            "true_positives": 57,
+            "false_positives": 5,
+            "true_negatives": 1927,
+            "false_negatives": 11,
+            "confusion_matrix": [
+                [
+                    1927,
+                    5
+                ],
+                [
+                    11,
+                    57
+                ]
+            ],
+            "predicted_positive_rate": 0.031
+        }
+    },
+    "subgroup_breakdowns": {
+        "failure_mode_breakdown": {
+            "HDF": {
+                "total_cases": 29,
+                "detected_cases": 28,
+                "recall": 0.9655172413793104,
+                "mean_predicted_probability": 0.9437858879304891
+            },
+            "PWF": {
+                "total_cases": 13,
+                "detected_cases": 13,
+                "recall": 1.0,
+                "mean_predicted_probability": 0.9685417904762066
+            },
+            "OSF": {
+                "total_cases": 16,
+                "detected_cases": 16,
+                "recall": 1.0,
+                "mean_predicted_probability": 0.9575324422501686
+            },
+            "TWF": {
+                "total_cases": 10,
+                "detected_cases": 2,
+                "recall": 0.2,
+                "mean_predicted_probability": 0.28072968806433607
+            },
+            "RNF": {
+                "total_cases": 4,
+                "detected_cases": 0,
+                "recall": 0.0,
+                "mean_predicted_probability": 0.12569640093741877
+            },
+            "Compound (Multi-Mode)": {
+                "total_cases": 2,
+                "detected_cases": 2,
+                "recall": 1.0,
+                "mean_predicted_probability": 0.9676997263702671
+            }
+        },
+        "product_type_breakdown": {
+            "L": {
+                "sample_count": 1170,
+                "failure_count": 38,
+                "failure_prevalence": 0.03247863247863248,
+                "pr_auc": 0.9207412816422199,
+                "roc_auc": 0.9888646085177608,
+                "f1": 0.88,
+                "precision": 0.8918918918918919,
+                "recall": 0.868421052631579
+            },
+            "M": {
+                "sample_count": 616,
+                "failure_count": 25,
+                "failure_prevalence": 0.040584415584415584,
+                "pr_auc": 0.88045952903551,
+                "roc_auc": 0.9734686971235195,
+                "f1": 0.8695652173913043,
+                "precision": 0.9523809523809523,
+                "recall": 0.8
+            },
+            "H": {
+                "sample_count": 214,
+                "failure_count": 5,
+                "failure_prevalence": 0.02336448598130841,
+                "pr_auc": 0.8555555555555556,
+                "roc_auc": 0.9875598086124402,
+                "f1": 0.8888888888888888,
+                "precision": 1.0,
+                "recall": 0.8
+            }
+        }
+    },
+    "cost_analysis": {
+        "optimal_cost_threshold": 0.38616161616161615,
+        "minimum_cost_usd": 190000.0,
+        "reactive_cost_usd": 680000.0,
+        "net_savings_usd": 490000.0,
+        "percentage_savings": 72.05882352941177
+    }
+}
