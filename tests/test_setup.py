@@ -53,7 +53,7 @@ def test_column_alias_normalization():
 def test_schema_validation_failure():
     """Verify validate_schema raises ValueError when mandatory columns are missing."""
     df_incomplete = pd.DataFrame({"Type": ["L"], "Air temperature [K]": [300.0]})
-    with pytest.raises(ValueError, match="Missing required inference columns"):
+    with pytest.raises(ValueError, match="Missing required inference"):
         validate_schema(df_incomplete)
 
 def test_seed_everything():

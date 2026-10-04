@@ -1,0 +1,24 @@
+{
+    "n_samples": 10000,
+    "n_features": 19,
+    "failure_rate": 0.0339,
+    "mode_counts": {
+        "HDF": 115,
+        "OSF": 98,
+        "PWF": 95,
+        "TWF": 46,
+        "RNF": 19
+    },
+    "type_failure_rates": {
+        "L": 0.03916666666666667,
+        "M": 0.02769436102769436,
+        "H": 0.020937188434695914
+    },
+    "temp_autocorr_lag1": 0.999416935254004,
+    "rpm_autocorr_lag1": 0.007666959625189193,
+    "torque_autocorr_lag1": 0.005399350523448837,
+    "stratified_prauc_mean": 0.8849710818314243,
+    "stratified_prauc_std": 0.027138968936563417,
+    "timeseries_prauc_mean": 0.706508123206469,
+    "timeseries_prauc_std": 0.15456191287568385
+}
