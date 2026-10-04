@@ -115,8 +115,11 @@ def get_theme(mode: str = "light") -> Dict[str, str]:
 def get_css(t: Dict[str, str]) -> str:
     """Generate comprehensive CSS variables and Streamlit overrides."""
     return f"""
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=block">
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..24,300..400,0,0&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap');
 
 .material-symbols-outlined {{
     font-family: 'Material Symbols Outlined' !important;
@@ -237,6 +240,7 @@ html, body, [class*="css"], .stApp {{
     padding-top: 1.0rem !important;
     padding-bottom: 1.2rem !important;
     max-width: 98% !important;
+    width: 98% !important;
 }}
 
 /* 3D Digital Twin Background Canvas */
@@ -413,6 +417,25 @@ input, textarea, [data-baseweb="input"] {{
     gap: 3px !important;
     display: inline-flex !important;
     align-items: center !important;
+    flex-wrap: nowrap !important;
+    white-space: nowrap !important;
+}}
+
+.st-key-top_nav {{
+    width: 100% !important;
+    display: flex !important;
+    justify-content: flex-start !important;
+    overflow-x: auto !important;
+    margin-bottom: 8px !important;
+}}
+
+.st-key-top_nav > div {{
+    min-width: max-content !important;
+}}
+
+.st-key-top_nav button {{
+    white-space: nowrap !important;
+    flex-shrink: 0 !important;
 }}
 
 [data-testid="stButtonGroup"] button,

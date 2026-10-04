@@ -42,11 +42,14 @@ from app.components import (
 # ---------------------------------------------------------------------------
 # PAGE CONFIG
 # ---------------------------------------------------------------------------
-st.set_page_config(
-    page_title="PredictiveGuard | ALGOTHON26",
-    layout="wide",
-    initial_sidebar_state="expanded",
-)
+try:
+    st.set_page_config(
+        page_title="PredictiveGuard | ALGOTHON26",
+        layout="wide",
+        initial_sidebar_state="expanded",
+    )
+except Exception:
+    pass
 
 # ---------------------------------------------------------------------------
 # THEME INITIALIZATION
@@ -1106,6 +1109,11 @@ def page_system_info(thresh_cfg):
 # MAIN
 # ---------------------------------------------------------------------------
 def main():
+    if "theme_mode" not in st.session_state:
+        st.session_state["theme_mode"] = "light"
+
+    apply_theme(st.session_state["theme_mode"])
+
     with st.container(key="pg_3d_bg"):
         render_3d_digital_twin_background(st.session_state.get("theme_mode", "light"))
 
