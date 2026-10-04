@@ -170,6 +170,11 @@ OSF_OVERSTRAIN_THRESHOLDS: Dict[str, float] = {
     "H": 13000.0,
 }
 
+# Conservative industrial engineering fallback for uncharacterized machine variants.
+# Defaulting to minimum known structural capacity (Type L = 11000 min*Nm) adheres to
+# conservative machinery safety standards (failsafe design) to prevent underestimating failure risk.
+OSF_CONSERVATIVE_CAPACITY_FALLBACK: float = 11000.0
+
 TWF_MIN_WEAR: float = 200.0               # minutes
 TWF_MAX_WEAR: float = 240.0               # minutes
 

@@ -1,0 +1,25 @@
+{
+    "lgbm": {
+        "best_pr_auc": 0.9212322303093282,
+        "best_params": {
+            "n_estimators": 163,
+            "max_depth": 5,
+            "num_leaves": 34,
+            "learning_rate": 0.02189334682532395,
+            "min_child_samples": 17,
+            "subsample": 0.7318489756626779,
+            "colsample_bytree": 0.915874172903745,
+            "scale_pos_weight": 8.218253932245032
+        }
+    },
+    "random_forest": {
+        "best_pr_auc": 0.9133787081487558,
+        "best_params": {
+            "n_estimators": 150,
+            "max_depth": 10,
+            "min_samples_split": 2,
+            "min_samples_leaf": 2,
+            "max_features": "log2"
+        }
+    }
+}

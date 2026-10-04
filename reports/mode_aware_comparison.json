@@ -1,0 +1,7 @@
+{
+    "standard_single_lgbm_prauc": 0.9200023842911719,
+    "mode_aware_stacking_prauc": 0.9205822895966621,
+    "mode_aware_noisy_or_prauc": 0.9183187315668533,
+    "stacking_prauc_delta": 0.0005799053054902359,
+    "noisy_or_prauc_delta": -0.001683652724318585
+}

@@ -1,0 +1,22 @@
+{
+    "optimal_f1_threshold": 0.8415151515151514,
+    "optimal_f1_score": 0.8995983935742972,
+    "high_recall_threshold": 0.495050505050505,
+    "high_recall_metrics": {
+        "pr_auc": 0.9215181201505721,
+        "roc_auc": 0.9834671642097454,
+        "f1": 0.8635514018691589,
+        "precision": 0.875,
+        "recall": 0.8523985239852399,
+        "mcc": 0.8589105992449081,
+        "brier_score": 0.008464091271692056,
+        "predicted_failure_rate": 0.033,
+        "threshold": 0.495050505050505
+    },
+    "default_threshold": 0.8415151515151514,
+    "brier_scores": {
+        "uncalibrated": 0.008464091271692056,
+        "platt": 0.00625362408379525,
+        "isotonic": 0.005941364288413882
+    }
+}
